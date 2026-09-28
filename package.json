@@ -1,0 +1,20 @@
+{
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "serve": "vite preview"
+    },
+    "devDependencies": {
+        "@vitejs/plugin-react": "latest",
+        "vite": "latest"
+    },
+    "dependencies": {
+        "firebase": "latest",
+        "mobx": "latest",
+        "mobx-react-lite": "latest",
+        "react": "latest",
+        "react-dom": "latest",
+        "react-router-dom": "^7.18.4"
+    }
+}

@@ -55,6 +55,9 @@ const model = {
     strokeColor: "#000000",
     strokeWidth: 4,
     strokeType: "pencil",       // "pencil" / "pen"
+    strokes: [],                // saved strokes from the backend (own and other people's), oldest first
+    peers: 0,                   // participants currently in the canvas
+    canvasError: null,          // message to show when the canvas cannot be loaded / joined
 
 
     // ========== Methods ==========
@@ -111,6 +114,10 @@ const model = {
     setStrokeColor(color){ this.strokeColor = color; },
     setStrokeWidth(width){ this.strokeWidth = width; },
     setStrokeType(type){ this.strokeType = type; },
+    setStrokes(strokes){ this.strokes = strokes; },
+    addStroke(stroke){ this.strokes.push(stroke); },
+    setPeers(count){ this.peers = count; },
+    setCanvasError(message){ this.canvasError = message; },
 };
 
 export const reactiveModel = observable(model);

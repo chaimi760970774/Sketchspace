@@ -187,7 +187,7 @@ button { font: inherit; cursor: pointer; }
 .icon-button { background: none; border: none; font-size: 24px; }
 .topbar-right { margin-left: auto; display: flex; gap: 24px; }
 .small-button { border: none; border-radius: 8px; background: #d9d9d9; padding: 6px 28px; font-size: 18px; }
-.canvas-area { flex: 1; min-height: 500px; background: #eaeaea; border-radius: 40px; }
+.canvas-area { flex: 1; min-height: 500px; background: #eaeaea; border-radius: 40px; overflow: hidden; }
 
 .panel-label { font-size: 16px; margin-bottom: -18px; }
 .stroke-type-list { display: flex; gap: 16px; }
@@ -201,3 +201,5 @@ button { font: inherit; cursor: pointer; }
 }
 .stroke-type.selected { background: #d9d9d9; }
 .color-picker { width: 160px; height: 160px; border: none; background: none; align-self: center; }
+.drawing-canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+.canvas-error { color: #b00020; padding: 8px 0; }

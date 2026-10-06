@@ -22,9 +22,11 @@ const ReactRoot = observer(
 
 function LayoutWithSidebar({model}) {
     return (
-        <div>
+        <div className="layout">
             <Sidebar model={model} />
-            <Outlet />
+            <div className="main-content">
+                <Outlet />
+            </div>
         </div>
     );
 }
@@ -60,6 +62,10 @@ export function makeRouter(model){
         },
         {
             path: "/canvas",
+            element: <Canvas model={model} />,
+        },
+        {
+            path: "/canvas/:canvasId",
             element: <Canvas model={model} />,
         },
     ]);

@@ -32,8 +32,12 @@ export function CanvasView(props){
                     </div>
                 </div>
 
-                {/* drawing area, replace with <canvas> later */}
-                <div className="canvas-area"></div>
+                {/* drawing board, passed in by the presenter */}
+                {props.board}
+
+                {/* photographer credits for every photo on the canvas, required by Unsplash guidelines */}
+                {props.credits.length > 0 &&
+                    <div className="canvas-credit">Photos by {props.credits.map(creditCB)} on Unsplash</div>}
             </div>
         </div>
     );
@@ -46,5 +50,15 @@ export function CanvasView(props){
 
     function collaboratorCB(person){
         return <div key={person.id} className="collaborator-avatar" title={person.name}></div>;
+    }
+
+    function creditCB(credit, index){
+        return (
+            <span key={credit.link}>
+                {index > 0 && ", "}
+                <a href={credit.link + "?utm_source=sketchspace&utm_medium=referral"}
+                   target="_blank" rel="noreferrer">{credit.name}</a>
+            </span>
+        );
     }
 }

@@ -1,5 +1,5 @@
 
-import { reactiveModel } from "./mobxReactiveModel.js";
+import { reactiveModel } from "./model/mobxReactiveModel.js";
 import { createElement, Fragment } from "react";
 import { ReactRoot } from "./reactjs/ReactRoot.jsx";
 import { createRoot } from "react-dom/client";

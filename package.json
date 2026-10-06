@@ -11,10 +11,13 @@
     },
     "dependencies": {
         "firebase": "latest",
+        "konva": "^10.7.1",
         "mobx": "latest",
         "mobx-react-lite": "latest",
         "react": "latest",
         "react-dom": "latest",
-        "react-router-dom": "^7.18.4"
+        "react-konva": "^19.3.0",
+        "react-router-dom": "^7.18.4",
+        "use-image": "^1.1.4"
     }
 }

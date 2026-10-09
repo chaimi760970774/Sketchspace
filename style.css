@@ -252,3 +252,76 @@ button { font: inherit; cursor: pointer; }
 
 .text-button { background: none; border: none; font-size: 18px; }
 .selected-photo { cursor: grab; }
+
+/* ========== My Work folder tabs ========== */
+
+/* tabs scroll sideways when there are many folders; the + stays on the right */
+.folder-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0;
+}
+
+.folder-tabs {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+}
+
+.folder-tab {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border: 1px solid #ccc;
+    border-radius: 16px;
+    background: #fff;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.folder-tab.active {
+    background: #333;
+    border-color: #333;
+    color: #fff;
+}
+
+/* a canvas is being dragged over this tab */
+.folder-tab.drag-over {
+    background: #fde8d7;
+    border-color: #f4a261;
+    color: #333;
+}
+
+.folder-delete {
+    margin-left: 8px;
+    opacity: 0.7;
+}
+
+.folder-delete:hover {
+    opacity: 1;
+}
+
+.folder-add {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border: 1px dashed #999;
+    border-radius: 50%;
+    background: none;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.folder-name-input {
+    flex-shrink: 0;
+    width: 140px;
+    padding: 6px 10px;
+    border: 1px solid #999;
+    border-radius: 16px;
+}
+
+.card-item[draggable="true"] {
+    cursor: grab;
+}

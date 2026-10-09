@@ -14,9 +14,7 @@ export function GalleryView(props){
                        value={props.searchText} onChange={searchChangeACB}/>
 
                 <div className="toolbar-row">
-                    <div className="category-list">
-                        {props.categories.map(categoryCB)}
-                    </div>
+                    <div className="toolbar-title">Shared canvases</div>
                     <button className="outline-button" onClick={props.onNewCanvas}>New Canvas ◀</button>
                 </div>
 
@@ -30,13 +28,6 @@ export function GalleryView(props){
     );
 
     function searchChangeACB(evt){ props.onSearchChange(evt.target.value); }
-
-    function categoryCB(category){
-        function clickCategoryACB(){ props.onCategoryClick(category); }
-
-        const className = category === props.selectedCategory ? "category-item active" : "category-item";
-        return <button key={category} className={className} onClick={clickCategoryACB}>{category}</button>;
-    }
 
     function cardCB(canvas){
         function clickCardACB(){ props.onCardClick(canvas); }

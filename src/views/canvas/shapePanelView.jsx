@@ -14,7 +14,7 @@ export function ShapePanelView(props){
             <div className="shape-actions">
                 {/* only works when a dashed shape is selected and placed on top of a photo */}
                 <button className="small-button" disabled={!props.canCut} onClick={props.onCut}
-                        title="Put a shape on a photo, select the shape, then cut">Cut</button>
+                        title="Put a shape on a photo, select the shape, then cut">Mask</button>
                 <span>or</span>
                 <input className="fill-color" type="color" value={props.fillColor} onChange={fillColorChangeACB}/>
                 <button className="small-button" disabled={!props.canFill} onClick={props.onFill}

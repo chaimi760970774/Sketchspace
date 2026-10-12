@@ -26,7 +26,20 @@ button { font: inherit; cursor: pointer; }
 }
 .sidebar-item.active { border-color: #333; }
 .sidebar-item.tool-active { background: #aaa; }
-.sidebar-icon { margin-bottom: 50px; }
+
+/* logo at the top of the sidebar, links to the home page */
+.logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 50px;
+    padding: 4px 0;
+    background: none;
+    border: none;
+}
+.logo-mark { width: 40px; height: 40px; }
+.logo-text { font-size: 14px; font-weight: bold; }
 .sidebar-bottom { margin-top: auto; }
 
 

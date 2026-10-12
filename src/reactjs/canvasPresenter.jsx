@@ -19,7 +19,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         collaborators={props.model.collaborators}
                         credits={props.model.getPhotoCredits()}
 
-                        onHomeClick={() => navigate("/gallery")}
+                        onHomeClick={() => navigate("/")}
                         onProfileClick={() => navigate("/profile")}
                         onToolChange={handlerToolChangeACB}
                         onExport={handlerExportACB}

@@ -1,6 +1,7 @@
 import "/style.css"
 import { useRef } from "react";
 import { downloadStageImage } from "/src/utils/exportImage.js";
+import { LogoView } from "/src/views/logoView.jsx";
 
 export function CanvasView(props){
     // the Konva stage, kept in the view because exporting the picture is pure UI work
@@ -10,7 +11,7 @@ export function CanvasView(props){
         <div className="layout">
             {/* canvas page's own sidebar */}
             <div className="sidebar">
-                <button className="sidebar-item sidebar-icon" onClick={props.onHomeClick}>Home</button>
+                <LogoView onClick={props.onHomeClick}/>
                 <button className={toolClass("shape")} onClick={clickShapeToolACB}>Shape</button>
                 <button className={toolClass("stroke")} onClick={clickStrokeToolACB}>Stroke</button>
                 <button className="sidebar-item sidebar-bottom" onClick={props.onProfileClick}>Profile</button>

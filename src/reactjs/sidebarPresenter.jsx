@@ -10,7 +10,7 @@ const Sidebar = observer(// observer needed for the presenter to update (its vie
 
         return <SidebarView
             currentPath={location.pathname}
-            onIconClick={() => navigate("/gallery")}
+            onLogoClick={() => navigate("/")}
             onGalleryClick={() => navigate("/gallery")}
             onMyWorkClick={() => navigate("/mywork")}
             onProfileClick={() => navigate("/profile")}

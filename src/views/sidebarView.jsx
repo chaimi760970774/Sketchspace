@@ -1,4 +1,5 @@
 import "/style.css"
+import { LogoView } from "/src/views/logoView.jsx";
 
 export function SidebarView(props){
     const isGallery = props.currentPath === "/" || props.currentPath === "/gallery";
@@ -7,7 +8,7 @@ export function SidebarView(props){
 
     return (
         <div className="sidebar">
-            <button className="sidebar-item sidebar-icon" onClick={props.onIconClick}>Icon</button>
+            <LogoView onClick={props.onLogoClick}/>
             <button className={itemClass(isGallery)} onClick={props.onGalleryClick}>gallery</button>
             <button className={itemClass(isMyWork)} onClick={props.onMyWorkClick}>My Work</button>
             <button className={itemClass(isProfile) + " sidebar-bottom"} onClick={props.onProfileClick}>Profile</button>

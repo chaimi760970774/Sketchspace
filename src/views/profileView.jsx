@@ -10,7 +10,7 @@ export function ProfileView(props){
         <div className="profile-card">
             <div className="profile-header">
                 {props.user.photoURL
-                    ? <img className="profile-avatar" src={props.user.photoURL}/>
+                    ? <img className="profile-avatar" src={props.user.photoURL} alt="Profile photo"/>
                     : <div className="profile-avatar"></div>}
 
                 <div className="profile-name">{props.user.name}</div>

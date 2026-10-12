@@ -21,19 +21,10 @@ const Login = observer(// observer needed for the presenter to update (its view)
         function handlerPasswordChangeACB(password){ props.model.setLoginPassword(password); }
 
         // all go straight to gallery for now, connect to the login API later
-        function handlerLoginACB(){
-            console.log("login with:", props.model.loginEmail);
-            navigate("/gallery");
-        }
-        function handlerGoogleLoginACB(){
-            console.log("login with google");
-            navigate("/gallery");
-        }
-        function handlerGuestLoginACB(){
-            console.log("login as guest");
-            navigate("/gallery");
-        }
-        function handlerSignUpACB(){ console.log("sign up clicked"); }
+        function handlerLoginACB(){ navigate("/gallery"); }
+        function handlerGoogleLoginACB(){ navigate("/gallery"); }
+        function handlerGuestLoginACB(){ navigate("/gallery"); }
+        function handlerSignUpACB(){ navigate("/gallery"); }
     }
 );
 

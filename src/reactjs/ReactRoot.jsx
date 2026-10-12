@@ -9,11 +9,12 @@ import { observer } from "mobx-react-lite";
 import { createHashRouter, RouterProvider, Outlet } from "react-router-dom";
 
 
+// the router is made once in index.jsx and passed in, so it is not rebuilt on every render
 const ReactRoot = observer(
     function ReactRoot(props){
         return (
             <div>
-                <RouterProvider router={makeRouter(props.model)}/>
+                <RouterProvider router={props.router}/>
             </div>
         );
     }

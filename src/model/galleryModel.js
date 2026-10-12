@@ -26,8 +26,9 @@ export const galleryModel = {
 
     // ========== Page state ==========
 
-    // Search for Gallery / My Work
-    searchText: "",
+    // Search, Gallery and My Work each keep their own text so one page's filter does not leak into the other
+    gallerySearchText: "",
+    myWorkSearchText: "",
 
     // My Work folder tabs
     selectedFolderId: null,     // folder tab that is open, null = "All"
@@ -40,10 +41,11 @@ export const galleryModel = {
     // ========== Methods ==========
 
     // Search
-    setSearchText(text){ this.searchText = text; },
+    setGallerySearchText(text){ this.gallerySearchText = text; },
+    setMyWorkSearchText(text){ this.myWorkSearchText = text; },
 
-    filterCanvases(canvases){
-        const text = this.searchText.toLowerCase();
+    filterCanvases(canvases, searchText){
+        const text = searchText.toLowerCase();
         function matchCB(canvas){ return canvas.title.toLowerCase().includes(text); }
         return canvases.filter(matchCB);
     },
@@ -51,7 +53,7 @@ export const galleryModel = {
     // Gallery shows everyone's shared canvases
     getGalleryCanvases(){
         function isSharedCB(canvas){ return canvas.isShared; }
-        return this.filterCanvases(this.canvases.filter(isSharedCB));
+        return this.filterCanvases(this.canvases.filter(isSharedCB), this.gallerySearchText);
     },
 
     // My Work shows the current user's canvases (this.user comes from userModel),
@@ -61,7 +63,7 @@ export const galleryModel = {
         const folderId = this.selectedFolderId;
         function isMineCB(canvas){ return canvas.owner === userId; }
         function isInFolderCB(canvas){ return !folderId || canvas.folderId === folderId; }
-        return this.filterCanvases(this.canvases.filter(isMineCB).filter(isInFolderCB));
+        return this.filterCanvases(this.canvases.filter(isMineCB).filter(isInFolderCB), this.myWorkSearchText);
     },
 
     // Folders

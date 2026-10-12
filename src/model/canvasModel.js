@@ -70,8 +70,11 @@ export const canvasModel = {
             photographer: photo.user.name,
             photographerLink: photo.user.links.html,
         };
-        trackDownload(photo.links.download_location);
+        trackDownload(photo.links.download_location).catch(trackingFailedACB);
         this.photoSearchOpen = false;
+
+        // only statistics for Unsplash, the user can keep working with the photo, so the error is ignored
+        function trackingFailedACB(){}
     },
 
     // Canvas elements

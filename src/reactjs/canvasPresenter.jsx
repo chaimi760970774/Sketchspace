@@ -4,7 +4,7 @@ import { CanvasBoardView } from "/src/views/canvas/canvasBoardView.jsx";
 import { ShapePanelView } from "/src/views/canvas/shapePanelView.jsx";
 import { StrokePanelView } from "/src/views/canvas/strokePanelView.jsx";
 import { PhotoSearchView } from "/src/views/canvas/photoSearchView.jsx";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useRef } from "react";
 import { downloadStageImage } from "/src/utils/exportImage.js";
 
@@ -12,7 +12,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
 
     function Canvas(props){
         const navigate = useNavigate();
-        const { canvasId } = useParams();   // undefined for a new canvas, use it to load the canvas from backend later
+        // useParams() gives the canvasId (undefined for a new canvas), use it to load the canvas from backend later
         const searchState = props.model.photoSearchPromiseState;
         const stageRef = useRef(null);      // the Konva stage, only needed for export
 
@@ -25,11 +25,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         onHomeClick={() => navigate("/gallery")}
                         onProfileClick={() => navigate("/profile")}
                         onToolChange={handlerToolChangeACB}
-                        onUndo={handlerUndoACB}
-                        onRedo={handlerRedoACB}
-                        onSave={handlerSaveACB}
                         onExport={handlerExportACB}
-                        onShare={handlerShareACB}
 
                         board={<CanvasBoardView stageRef={stageRef}
                                                 elements={props.model.elements.slice()}   // slice() so the presenter re-renders when elements change
@@ -104,12 +100,6 @@ const Canvas = observer(// observer needed for the presenter to update (its view
 
         // topbar
         function handlerExportACB(){ downloadStageImage(stageRef.current, "sketchspace.png"); }
-
-        // features below will be done later, only logging for now
-        function handlerUndoACB(){ console.log("undo"); }
-        function handlerRedoACB(){ console.log("redo"); }
-        function handlerSaveACB(){ console.log("save canvas:", canvasId); }
-        function handlerShareACB(){ console.log("share canvas:", canvasId); }
     }
 );
 

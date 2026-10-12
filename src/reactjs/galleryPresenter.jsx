@@ -8,13 +8,13 @@ const Gallery = observer(// observer needed for the presenter to update (its vie
         const navigate = useNavigate();
 
         return <GalleryView canvases={props.model.getGalleryCanvases()}
-                            searchText={props.model.searchText}
+                            searchText={props.model.gallerySearchText}
 
                             onSearchChange={handlerSearchChangeACB}
                             onNewCanvas={handlerNewCanvasACB}
                             onCardClick={handlerCardClickACB}/>;
 
-        function handlerSearchChangeACB(text){ props.model.setSearchText(text); }
+        function handlerSearchChangeACB(text){ props.model.setGallerySearchText(text); }
         function handlerNewCanvasACB(){ navigate("/canvas"); }
         function handlerCardClickACB(canvas){ navigate(`/canvas/${canvas.id}`); }
     }

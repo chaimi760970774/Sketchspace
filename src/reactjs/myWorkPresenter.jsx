@@ -9,7 +9,7 @@ const MyWork = observer(// observer needed for the presenter to update (its view
 
         return <MyWorkView canvases={props.model.getMyCanvases()}
                            folders={props.model.getMyFolders()}
-                           searchText={props.model.searchText}
+                           searchText={props.model.myWorkSearchText}
                            selectedFolderId={props.model.selectedFolderId}
                            dragOverTab={props.model.dragOverTab}
                            newFolderOpen={props.model.newFolderOpen}
@@ -27,7 +27,7 @@ const MyWork = observer(// observer needed for the presenter to update (its view
                            onNewCanvas={handlerNewCanvasACB}
                            onCardClick={handlerCardClickACB}/>;
 
-        function handlerSearchChangeACB(text){ props.model.setSearchText(text); }
+        function handlerSearchChangeACB(text){ props.model.setMyWorkSearchText(text); }
         function handlerFolderClickACB(folderId){ props.model.selectFolder(folderId); }
         function handlerNewFolderOpenACB(){ props.model.openNewFolder(); }
         function handlerNewFolderNameChangeACB(name){ props.model.setNewFolderName(name); }

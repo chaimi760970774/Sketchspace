@@ -4,10 +4,14 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 // an error from the server; status is the HTTP status (0 = the server could not be reached)
+// hasServerMessage is true when the server explained the error itself ({ error: "..." });
+// a 404 without it means the server has no such route at all
 export class ApiError extends Error {
-    constructor(message, status){
+    constructor(message, status, hasServerMessage){
         super(message);
-        this.status = status;       // setting fields in a constructor is how a class instance is built
+        // setting fields in a constructor is how a class instance is built
+        this.status = status;
+        this.hasServerMessage = hasServerMessage;
     }
 }
 
@@ -16,7 +20,7 @@ function request(path, options){
     return fetch(API_URL + path, options).then(gotResponseACB, networkErrorACB);
 
     function networkErrorACB(){
-        throw new ApiError("Cannot reach the server, please check that it is running", 0);
+        throw new ApiError("Cannot reach the server, please check that it is running", 0, false);
     }
 
     function gotResponseACB(response){
@@ -24,11 +28,11 @@ function request(path, options){
         return response.json().then(gotJsonACB, notJsonACB);
 
         function gotJsonACB(data){
-            if (!response.ok) throw new ApiError(data.error || "Server error " + response.status, response.status);
+            if (!response.ok) throw new ApiError(data.error || "Server error " + response.status, response.status, Boolean(data.error));
             return data;
         }
         function notJsonACB(){
-            throw new ApiError("Server error " + response.status, response.status);
+            throw new ApiError("Server error " + response.status, response.status, false);
         }
     }
 }
@@ -48,7 +52,7 @@ function canvasPath(canvasId){ return "/api/canvas/" + encodeURIComponent(canvas
 // here without a request, with the same error the server would send
 function isValidCanvasId(canvasId){ return /^[0-9a-f]{24}$/i.test(canvasId); }
 function requestForCanvas(canvasId, pathAfterId, options){
-    if (!isValidCanvasId(canvasId)) return Promise.reject(new ApiError("Invalid canvas id", 400));
+    if (!isValidCanvasId(canvasId)) return Promise.reject(new ApiError("Invalid canvas id", 400, true));
     return request(canvasPath(canvasId) + pathAfterId, options);
 }
 
@@ -100,4 +104,10 @@ export function addStroke(canvasId, stroke){
     };
     function getIdACB(data){ return data.strokeId; }
     return requestForCanvas(canvasId, "/strokes", withJson("POST", body)).then(getIdACB);
+}
+
+// DELETE /api/canvas/:canvasId/strokes/:strokeId
+// Note: the server does not have this route yet, so for now it answers 404 (see removeStroke in the model)
+export function deleteStroke(canvasId, strokeId){
+    return requestForCanvas(canvasId, "/strokes/" + encodeURIComponent(strokeId), { method: "DELETE" });
 }

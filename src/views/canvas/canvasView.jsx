@@ -1,11 +1,19 @@
 import "/style.css"
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { downloadStageImage } from "/src/utils/exportImage.js";
 import { LogoView } from "/src/views/logoView.jsx";
+import { ButtonView } from "/src/views/buttonView.jsx";
+
+// typing in these must never delete what is selected on the canvas
+const TEXT_FIELD_TAGS = ["INPUT", "TEXTAREA", "SELECT"];
 
 export function CanvasView(props){
     // the Konva stage, kept in the view because exporting the picture is pure UI work
     const stageRef = useRef(null);
+
+    // Delete / Backspace removes what is selected. The listener is removed again before the next
+    // render adds a fresh one, and when the page closes, so there is never more than one.
+    useEffect(listenToDeleteKeyACB, [props.canDelete, props.onDelete]);
 
     return (
         <div className="layout">
@@ -44,6 +52,11 @@ export function CanvasView(props){
                     </div>
 
                     <div className="topbar-right">
+                        {/* the same as pressing Delete, for users who do not know the shortcut */}
+                        {props.canDelete &&
+                            <ButtonView danger title="Delete the selected item (Delete / Backspace)" onClick={props.onDelete}>
+                                Delete {props.selectionLabel.toLowerCase()}
+                            </ButtonView>}
                         {/* the server can only store strokes so far */}
                         <div className="coming-soon-group">
                             <button className="small-button" disabled>Save</button>
@@ -69,6 +82,22 @@ export function CanvasView(props){
             </div>
         </div>
     );
+
+    function listenToDeleteKeyACB(){
+        window.addEventListener("keydown", keyDownACB);
+        return stopListeningACB;
+
+        function stopListeningACB(){ window.removeEventListener("keydown", keyDownACB); }
+        function keyDownACB(evt){
+            if (evt.key !== "Delete" && evt.key !== "Backspace") return;
+            if (!props.canDelete || isTyping(evt.target)) return;
+            evt.preventDefault();       // Backspace must not do anything else in the browser
+            props.onDelete();
+        }
+    }
+    function isTyping(target){
+        return Boolean(target) && (target.isContentEditable || TEXT_FIELD_TAGS.includes(target.tagName));
+    }
 
     // download the picture, then tell the presenter whether it worked
     function exportACB(){

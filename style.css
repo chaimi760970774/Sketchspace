@@ -239,6 +239,8 @@ button { font: inherit; cursor: pointer; }
 .coming-soon { font-size: 11px; color: #888; }
 .small-button { border: none; border-radius: 8px; background: #d9d9d9; padding: 6px 28px; font-size: 18px; }
 .small-button:disabled { opacity: 0.4; cursor: default; }
+.danger-button { background: #f6d5d1; color: #a93226; }
+.danger-button:hover { background: #f0bdb6; }
 .canvas-area {
     flex: 1;
     min-height: 500px;

@@ -55,6 +55,8 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         nameDraft={props.model.canvasNameDraft}
                         nameError={props.model.canvasNameError}
                         strokeSaveStatus={props.model.getStrokeSaveStatus()}
+                        canDelete={props.model.canDeleteSelection()}
+                        selectionLabel={props.model.getSelectionLabel()}
 
                         onHomeClick={handlerHomeACB}
                         onProfileClick={() => navigate("/profile")}
@@ -65,6 +67,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         onRenameCancel={handlerRenameCancelACB}
                         onShareToggle={handlerShareToggleACB}
                         onExport={handlerExportACB}
+                        onDelete={handlerDeleteACB}
 
                         renderBoard={renderBoardCB}>
 
@@ -146,6 +149,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerRenameCancelACB(){ props.model.cancelRename(); }
         function handlerShareToggleACB(){ props.model.toggleCurrentCanvasShared(); }
         function handlerExportACB(succeeded){ props.model.showExportResult(succeeded); }
+        function handlerDeleteACB(){ props.model.deleteSelection(); }
 
         // canvas board
         function handlerDropItemACB(type, position){

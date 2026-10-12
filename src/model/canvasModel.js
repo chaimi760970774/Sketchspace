@@ -3,6 +3,9 @@ import { searchPhotos, trackDownload } from "/src/api/unsplashSource.js";
 import { toLocalPoint, getCentre, isPointInside } from "/src/utils/geometry.js";
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from "/src/utils/canvasSize.js";
 
+// names used in messages, e.g. "Photo deleted"
+const ELEMENT_LABELS = { photo: "Photo", shape: "Shape", cutout: "Cutout" };
+
 // elements, tools, cutting, Unsplash
 export const canvasModel = {
 
@@ -43,14 +46,20 @@ export const canvasModel = {
     //           cutWidth, cutHeight, photo: { x, y, width, height, rotation } }   (see cutWithSelectedShape)
 
     elements: [],
-    selectedElementId: null,    // element selected on the canvas (shows resize handles)
+    // what is selected on the canvas: the id of an element (shows resize handles) or of a stroke
+    // (highlighted); only one thing at a time, null = nothing
+    selectedElementId: null,
 
 
 
     // ========== Methods ==========
 
     // Tools
-    setCurrentTool(tool){ this.currentTool = tool; },
+    setCurrentTool(tool){
+        this.currentTool = tool;
+        // with the stroke tool, clicks draw instead of select, so nothing stays selected
+        if (tool === "stroke") this.selectedElementId = null;
+    },
     setStrokeColor(color){ this.strokeColor = color; },
     setStrokeWidth(width){ this.strokeWidth = width; },
     setStrokeType(type){ this.strokeType = type; },
@@ -150,6 +159,39 @@ export const canvasModel = {
         this.elements = this.elements.map(updateCB);
     },
     selectElement(id){ this.selectedElementId = id; },
+
+    findElement(id){
+        function isTargetCB(element){ return element.id === id; }
+        return this.elements.find(isTargetCB);
+    },
+
+    // photos, shapes and cutouts only live in the frontend, so no request is needed
+    removeElement(id){
+        const element = this.findElement(id);
+        if (!element) return;
+        function isOtherCB(other){ return other.id !== id; }
+        this.elements = this.elements.filter(isOtherCB);
+        this.selectedElementId = null;
+        this.showToast(ELEMENT_LABELS[element.type] + " deleted", "success");
+    },
+
+    // Deleting whatever is selected (element or stroke), used by the Delete key and the Delete button
+    // false while the photo search popup is open, so keys typed there never delete anything behind it
+    canDeleteSelection(){
+        return Boolean(this.getSelectionLabel()) && !this.photoSearchOpen;
+    },
+    // "Photo", "Shape", "Cutout", "Line", or "" when nothing is selected
+    getSelectionLabel(){
+        const element = this.findElement(this.selectedElementId);
+        if (element) return ELEMENT_LABELS[element.type];
+        if (this.findStroke(this.selectedElementId)) return "Line";
+        return "";
+    },
+    deleteSelection(){
+        if (!this.canDeleteSelection()) return;
+        if (this.findElement(this.selectedElementId)) this.removeElement(this.selectedElementId);
+        else this.removeStroke(this.selectedElementId);
+    },
 
     // A new shape is a dashed template. It then either cuts a photo (becomes a cutout)
     // or gets filled with a colour (becomes a filled shape).

@@ -1,5 +1,5 @@
 import { resolvePromise, isPending } from "/src/utils/resolvePromise.js";
-import { getCanvas, listStrokes, addStroke } from "/src/api/canvasSource.js";
+import { getCanvas, listStrokes, addStroke, deleteStroke } from "/src/api/canvasSource.js";
 import { validateStroke } from "/src/utils/validateStroke.js";
 
 // the server has the layers foreground / middleground / background; strokes go on the top one for now
@@ -159,10 +159,70 @@ export const openCanvasModel = {
             function updateCB(other){ return other.id === temporaryId ? { ...other, ...changes } : other; }
             model.strokes = model.strokes.map(updateCB);
         }
-        function savedACB(strokeId){ updateThisStroke({ id: strokeId, status: "saved" }); }
+        function savedACB(strokeId){
+            updateThisStroke({ id: strokeId, status: "saved" });
+            // the stroke may have been selected while saving: keep it selected under its new id
+            if (model.selectedElementId === temporaryId) model.selectedElementId = strokeId;
+        }
         function failedACB(error){
             updateThisStroke({ status: "failed" });
             model.showToast("A stroke could not be saved (" + error.message + "), it is shown faded", "error");
+        }
+    },
+
+    findStroke(strokeId){
+        function isTargetCB(stroke){ return stroke.id === strokeId; }
+        return this.strokes.find(isTargetCB);
+    },
+
+    // Removed from the canvas right away, then deleted on the server.
+    // If the server refuses, the stroke is put back where it was.
+    removeStroke(strokeId){
+        const model = this;
+        const stroke = this.findStroke(strokeId);
+        if (!stroke) return;
+
+        if (stroke.status === "saving") {
+            this.showToast("This line is still being saved, try again in a moment", "info");
+            return;
+        }
+
+        function isTargetCB(other){ return other.id === strokeId; }
+        function isOtherCB(other){ return other.id !== strokeId; }
+        function toIdCB(other){ return other.id; }
+        // the strokes drawn before this one, to find its place again if it has to come back
+        const idsBefore = this.strokes.slice(0, this.strokes.findIndex(isTargetCB)).map(toIdCB);
+
+        this.strokes = this.strokes.filter(isOtherCB);
+        this.selectedElementId = null;
+
+        // a stroke that failed to save never reached the server, so there is nothing to delete there
+        if (stroke.status === "failed") {
+            this.showToast("Line deleted", "success");
+            return;
+        }
+
+        const canvasId = this.currentCanvas._id;
+        deleteStroke(canvasId, strokeId).then(deletedACB).catch(failedACB);
+
+        function deletedACB(){ model.showToast("Line deleted", "success"); }
+        function failedACB(error){
+            // only put it back if that canvas is still open
+            if (model.currentCanvas && model.currentCanvas._id === canvasId) putBack();
+            model.showToast(deleteErrorMessage(error), "error");
+        }
+        // the strokes that were before it are still in front, in the same order: it goes right after them
+        function putBack(){
+            function wasBeforeCB(other){ return idsBefore.includes(other.id); }
+            const position = model.strokes.filter(wasBeforeCB).length;
+            model.strokes = [...model.strokes.slice(0, position), stroke, ...model.strokes.slice(position)];
+        }
+        // a 404 without a message from the server means the route does not exist (yet);
+        // once the server has it, its own messages (e.g. "Stroke not found") are shown instead
+        function deleteErrorMessage(error){
+            if (error.status === 404 && !error.hasServerMessage)
+                return "Deleting lines is not supported by the server yet, the line was put back";
+            return "Could not delete the line (" + error.message + "), it was put back";
         }
     },
 

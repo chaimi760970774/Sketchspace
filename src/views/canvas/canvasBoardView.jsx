@@ -46,8 +46,8 @@ export function CanvasBoardView(props){
                     <Transformer ref={transformerRef}/>
                 </Layer>
 
-                {/* strokes are drawn above photos and shapes, oldest first */}
-                <Layer listening={false}>
+                {/* strokes are drawn above photos and shapes, oldest first; clickable only with the shape tool */}
+                <Layer listening={!isStrokeTool}>
                     {props.strokes.map(strokeCB)}
                     {draftPoints && <StrokeNode stroke={makeDraftStroke()}/>}
                 </Layer>
@@ -55,8 +55,11 @@ export function CanvasBoardView(props){
         </div>
     );
 
+    // only photos, shapes and cutouts get resize handles; a selected stroke is just highlighted
     function attachTransformerACB(){
-        const node = props.selectedId && !isStrokeTool ? stageRef.current.findOne("#" + props.selectedId) : null;
+        function isSelectedCB(element){ return element.id === props.selectedId; }
+        const elementSelected = !isStrokeTool && props.elements.some(isSelectedCB);
+        const node = elementSelected ? stageRef.current.findOne("#" + props.selectedId) : null;
         transformerRef.current.nodes(node ? [node] : []);
     }
 
@@ -119,7 +122,13 @@ export function CanvasBoardView(props){
         };
     }
 
-    function strokeCB(stroke){ return <StrokeNode key={stroke.id} stroke={stroke}/>; }
+    function strokeCB(stroke){
+        function selectACB(){ props.onSelect(stroke.id); }
+        return <StrokeNode key={stroke.id} stroke={stroke}
+                           interactive={!isStrokeTool}
+                           selected={stroke.id === props.selectedId}
+                           onSelect={selectACB}/>;
+    }
 
     function elementCB(element){
         function selectACB(){ props.onSelect(element.id); }

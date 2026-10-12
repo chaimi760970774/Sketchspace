@@ -6,22 +6,23 @@ export function LoginView(props){
             <div className="login-logo">Logo</div>
             <h2 className="login-title">Welcome to Sketchspace</h2>
 
-            <div className="login-form">
-                <button className="login-button login-google" onClick={props.onGoogleLogin}>
+            {/* a real form, so the browser knows the password field belongs to it and Enter logs in */}
+            <form className="login-form" onSubmit={submitACB}>
+                <button type="button" className="login-button login-google" onClick={props.onGoogleLogin}>
                     <span className="google-g">G</span> Log in with Google
                 </button>
 
                 <label>User Email</label>
-                <input className="login-input" value={props.email} onChange={emailChangeACB}/>
+                <input className="login-input" autoComplete="email" value={props.email} onChange={emailChangeACB}/>
 
                 <label>Password</label>
-                <input className="login-input" type="password" value={props.password} onChange={passwordChangeACB}/>
+                <input className="login-input" type="password" autoComplete="current-password" value={props.password} onChange={passwordChangeACB}/>
 
                 <div className="login-buttons">
-                    <button className="login-button" onClick={props.onLogin}>Login</button>
-                    <button className="login-button" onClick={props.onGuestLogin}>Log As Guest</button>
+                    <button type="submit" className="login-button">Login</button>
+                    <button type="button" className="login-button" onClick={props.onGuestLogin}>Log As Guest</button>
                 </div>
-            </div>
+            </form>
 
             <div>
                 Don't have an account? <span className="link" onClick={props.onSignUp}>Sign up</span>
@@ -29,6 +30,10 @@ export function LoginView(props){
         </div>
     );
 
+    function submitACB(evt){
+        evt.preventDefault();       // stay in the app instead of reloading the page
+        props.onLogin();
+    }
     function emailChangeACB(evt){ props.onEmailChange(evt.target.value); }
     function passwordChangeACB(evt){ props.onPasswordChange(evt.target.value); }
 }

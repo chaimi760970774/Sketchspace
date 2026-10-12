@@ -79,7 +79,7 @@ export const canvasModel = {
 
     // Canvas elements
     addElement(element){
-        this.elements.push(element);
+        this.elements = [...this.elements, element];
         this.selectedElementId = element.id;
     },
     addPhotoElement(position){
@@ -117,11 +117,12 @@ export const canvasModel = {
     },
 
     updateElement(id, changes){
-        function isTargetCB(element){ return element.id === id; }
-        const index = this.elements.findIndex(isTargetCB);
-        if (index === -1) return;
-        // replace the whole object so the presenter notices the change
-        this.elements[index] = { ...this.elements[index], ...changes };
+        // a new object for the changed element, so the presenter notices the change
+        function updateCB(element){
+            if (element.id !== id) return element;
+            return { ...element, ...changes };
+        }
+        this.elements = this.elements.map(updateCB);
     },
     selectElement(id){ this.selectedElementId = id; },
 
@@ -213,14 +214,12 @@ export const canvasModel = {
 
     // one credit per photographer used on the canvas, required by Unsplash guidelines
     getPhotoCredits(){
-        const credits = [];
-        function addCreditCB(element){
-            if (!element.photographer) return;      // shapes have no photographer
-            function isSameCB(credit){ return credit.link === element.photographerLink; }
-            if (credits.some(isSameCB)) return;
-            credits.push({ name: element.photographer, link: element.photographerLink });
+        function hasPhotographerCB(element){ return element.photographer; }     // shapes have no photographer
+        // keyed by the photographer's link, so the same photographer is only listed once
+        function toCreditEntryCB(element){
+            return [element.photographerLink, { name: element.photographer, link: element.photographerLink }];
         }
-        this.elements.forEach(addCreditCB);
-        return credits;
+        const creditsByLink = new Map(this.elements.filter(hasPhotographerCB).map(toCreditEntryCB));
+        return [...creditsByLink.values()];
     },
 };

@@ -40,9 +40,9 @@ export function MyWorkView(props){
         const tabKey = folderId || "all";
         const isActive = folderId === props.selectedFolderId;
 
-        let className = "folder-tab";
-        if (isActive) className += " active";
-        if (tabKey === props.dragOverTab) className += " drag-over";
+        const activeClass = isActive ? " active" : "";
+        const dragOverClass = tabKey === props.dragOverTab ? " drag-over" : "";
+        const className = "folder-tab" + activeClass + dragOverClass;
 
         function clickTabACB(){ props.onFolderClick(folderId); }
 
@@ -95,7 +95,7 @@ export function MyWorkView(props){
         function clickCardACB(){ props.onCardClick(canvas); }
         function dragStartACB(evt){
             evt.dataTransfer.setData("text/plain", canvas.id);
-            evt.dataTransfer.effectAllowed = "move";
+            evt.dataTransfer.effectAllowed = "move";     // browser drag API, can only be set by assignment
         }
         function dragEndACB(){ props.onDragOverTab(null); }     // also clears the highlight if dropped elsewhere
 

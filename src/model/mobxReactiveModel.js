@@ -16,5 +16,5 @@ const model = {
 
 export const reactiveModel = observable(model);
 
-// for debug purpose
+// for debug purpose (a global can only be set by assignment)
 window.myModel = reactiveModel;

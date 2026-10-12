@@ -73,6 +73,8 @@ export function CanvasBoardView(props){
                 height: node.height() * node.scaleY(),
                 rotation: node.rotation(),
             };
+            // Konva keeps its own node state; the scale must be reset on the node itself,
+            // otherwise the new width/height would be scaled a second time
             node.scaleX(1);
             node.scaleY(1);
             props.onElementChange(element.id, changes);

@@ -4,7 +4,8 @@ import { createElement, Fragment } from "react";
 import { ReactRoot, makeRouter } from "./reactjs/ReactRoot.jsx";
 import { createRoot } from "react-dom/client";
 
-window.React = { createElement, Fragment }; // needed in the lab because it works with both React and Vue
+// needed in the lab because it works with both React and Vue; a global can only be set by assignment
+window.React = { createElement, Fragment };
 
 // created once here, outside any component
 const router = makeRouter(reactiveModel);

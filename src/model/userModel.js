@@ -38,8 +38,8 @@ export const userModel = {
     },
     setProfileDraft(text){ this.profileDraft = text; },
     saveEdit(){
-        this.user[this.editingField] = this.profileDraft;
+        this.user = { ...this.user, [this.editingField]: this.profileDraft };
         this.editingField = null;
     },
-    setPhotoURL(url){ this.user.photoURL = url; },
+    setPhotoURL(url){ this.user = { ...this.user, photoURL: url }; },
 };

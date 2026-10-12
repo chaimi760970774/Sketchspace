@@ -1,4 +1,6 @@
 // saves everything on the Konva stage as a PNG file
+// The Konva nodes, the <canvas> and the <a> link below are browser objects that can only be
+// configured by changing them (hide/show, width, fillStyle, href ...), so mutation is unavoidable here.
 export function downloadStageImage(stage, fileName){
     // hide the resize handles so they don't end up in the picture
     const transformers = stage.find("Transformer");

@@ -31,7 +31,7 @@ export function PhotoSearchView(props){
 
     function renderResults(){
         if (props.error) return <div className="empty-text">Something went wrong, please try again</div>;
-        if (props.loading) return <div className="empty-text">Loading...</div>;
+        if (props.loading) return <div className="spinner" role="status" aria-label="Searching photos"></div>;
         if (!props.photos) return <div className="empty-text">Type a keyword to search</div>;
         if (props.photos.length === 0) return <div className="empty-text">No photos found</div>;
 

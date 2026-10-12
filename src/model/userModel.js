@@ -68,4 +68,12 @@ export const userModel = {
         this.user = { ...this.user, photoURL: url };
         this.showToast("Profile photo updated", "success");
     },
+
+    // local preview only, upload to backend later
+    uploadPhoto(file){
+        const oldURL = this.user.photoURL;
+        this.setPhotoURL(URL.createObjectURL(file));
+        // a "blob:" URL keeps the old file in memory until it is revoked; other URLs are left alone
+        if (oldURL && oldURL.startsWith("blob:")) URL.revokeObjectURL(oldURL);
+    },
 };

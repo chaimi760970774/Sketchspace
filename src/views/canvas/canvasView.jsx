@@ -1,6 +1,11 @@
 import "/style.css"
+import { useRef } from "react";
+import { downloadStageImage } from "/src/utils/exportImage.js";
 
 export function CanvasView(props){
+    // the Konva stage, kept in the view because exporting the picture is pure UI work
+    const stageRef = useRef(null);
+
     return (
         <div className="layout">
             {/* canvas page's own sidebar */}
@@ -34,13 +39,13 @@ export function CanvasView(props){
 
                     <div className="topbar-right">
                         {renderComingSoon("Save")}
-                        <button className="small-button" onClick={props.onExport}>Export</button>
+                        <button className="small-button" onClick={exportACB}>Export</button>
                         {renderComingSoon("Share")}
                     </div>
                 </div>
 
-                {/* drawing board, passed in by the presenter */}
-                {props.board}
+                {/* drawing board, the presenter decides what is on it */}
+                {props.renderBoard(stageRef)}
 
                 {/* photographer credits for every photo on the canvas, required by Unsplash guidelines */}
                 {props.credits.length > 0 &&
@@ -48,6 +53,12 @@ export function CanvasView(props){
             </div>
         </div>
     );
+
+    // download the picture, then tell the presenter whether it worked
+    function exportACB(){
+        const succeeded = downloadStageImage(stageRef.current, "sketchspace.png");
+        props.onExport(succeeded);
+    }
 
     function renderComingSoon(label){
         return (

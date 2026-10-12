@@ -5,8 +5,6 @@ import { ShapePanelView } from "/src/views/canvas/shapePanelView.jsx";
 import { StrokePanelView } from "/src/views/canvas/strokePanelView.jsx";
 import { PhotoSearchView } from "/src/views/canvas/photoSearchView.jsx";
 import { useNavigate } from "react-router-dom";
-import { useRef } from "react";
-import { downloadStageImage } from "/src/utils/exportImage.js";
 
 const Canvas = observer(// observer needed for the presenter to update (its view) when relevant parts of the model change
 
@@ -14,7 +12,6 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         const navigate = useNavigate();
         // useParams() gives the canvasId (undefined for a new canvas), use it to load the canvas from backend later
         const searchState = props.model.photoSearchPromiseState;
-        const stageRef = useRef(null);      // the Konva stage, only needed for export
 
         return (
             <>
@@ -27,13 +24,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         onToolChange={handlerToolChangeACB}
                         onExport={handlerExportACB}
 
-                        board={<CanvasBoardView stageRef={stageRef}
-                                                elements={props.model.elements.slice()}   // slice() so the presenter re-renders when elements change
-                                                selectedId={props.model.selectedElementId}
-                                                onDropItem={handlerDropItemACB}
-                                                onSelect={handlerSelectElementACB}
-                                                onDeselect={handlerDeselectACB}
-                                                onElementChange={handlerElementChangeACB}/>}>
+                        renderBoard={renderBoardCB}>
 
                 {props.model.currentTool === "shape"
                     ? <ShapePanelView selectedShape={props.model.selectedShape}
@@ -69,6 +60,17 @@ const Canvas = observer(// observer needed for the presenter to update (its view
             </>
         );
 
+        // the view keeps the Konva stage (it needs it for export) and hands it in here
+        function renderBoardCB(stageRef){
+            return <CanvasBoardView stageRef={stageRef}
+                                    elements={props.model.elements.slice()}   // slice() so the presenter re-renders when elements change
+                                    selectedId={props.model.selectedElementId}
+                                    onDropItem={handlerDropItemACB}
+                                    onSelect={handlerSelectElementACB}
+                                    onDeselect={handlerDeselectACB}
+                                    onElementChange={handlerElementChangeACB}/>;
+        }
+
         function handlerToolChangeACB(tool){ props.model.setCurrentTool(tool); }
 
         // canvas board
@@ -100,7 +102,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerStrokeColorChangeACB(color){ props.model.setStrokeColor(color); }
 
         // topbar
-        function handlerExportACB(){ props.model.showExportResult(downloadStageImage(stageRef.current, "sketchspace.png")); }
+        function handlerExportACB(succeeded){ props.model.showExportResult(succeeded); }
     }
 );
 

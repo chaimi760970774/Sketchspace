@@ -11,7 +11,7 @@ const CANVAS_HEIGHT = 600;
 
 export function CanvasBoardView(props){
     // Konva needs refs to reach the canvas; these are UI-only, all app data stays in the model
-    // stageRef comes from the presenter, so it can export the picture
+    // stageRef comes from CanvasView, which uses it to export the picture
     const stageRef = props.stageRef;
     const transformerRef = useRef(null);
 

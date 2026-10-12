@@ -20,10 +20,7 @@ const Profile = observer(// observer needed for the presenter to update (its vie
         function handlerDraftChangeACB(text){ props.model.setProfileDraft(text); }
         function handlerSaveACB(){ props.model.saveEdit(); }
 
-        // local preview only, upload to backend later
-        function handlerPhotoUploadACB(file){
-            props.model.setPhotoURL(URL.createObjectURL(file));
-        }
+        function handlerPhotoUploadACB(file){ props.model.uploadPhoto(file); }
     }
 );
 

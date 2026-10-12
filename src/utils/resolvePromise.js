@@ -1,22 +1,24 @@
+// Mutation is intended here: promiseState is a MobX observable owned by the model,
+// and changing its fields is how observers (presenters) learn about the promise progress.
 export function resolvePromise(promise, promiseState){
-//如果api1 call resolves在api2call之后 他应该被忽略 因为已经过时
-    
-    promiseState.promise=promise;
-    promiseState.data=null;
-    promiseState.error=null;//当我们开始一个新的请求时，我们需要重置之前的状态。忘掉之前的数据 因为如果上一次请求失败 error里还有值
 
-    if (promise){//当promise存在时才会有下面的 the promise only executes when it's truthy，如果是null，promise state should still be set (reset in this case) but the promise shouldn't be executed.
+    // a new request starts: forget the old data and error, otherwise an old error would still show
+    promiseState.promise = promise;
+    promiseState.data = null;
+    promiseState.error = null;
+
+    // a null promise only resets the state, there is nothing to wait for
+    if (promise){
         promise.then(successACB).catch(failureACB);
     }
 
+    // if an older request finishes after a newer one started, its result is out of date and ignored
     function successACB(result){
-        if (promiseState.promise === promise)//resolvePromise check for race condition 
-            promiseState.data = result;//resolvePromise sets data after the promise resolves
+        if (promiseState.promise === promise)
+            promiseState.data = result;
     }
     function failureACB(someError){
-        if (promiseState.promise === promise)//resolvePromise check for race condition 
-            promiseState.error = someError;//resolvePromise sets error after the promise rejects
-
+        if (promiseState.promise === promise)
+            promiseState.error = someError;
     }
-
 }

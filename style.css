@@ -3,7 +3,7 @@ body { margin: 0; font-family: Arial, sans-serif; background: #f5f5f5; }
 button { font: inherit; cursor: pointer; }
 
 
-/* ========== 共用布局 ========== */
+/* ========== Shared layout ========== */
 .layout { display: flex; min-height: 100vh; }
 .main-content { flex: 1; background: white; }
 .page-content { padding: 40px 80px; }

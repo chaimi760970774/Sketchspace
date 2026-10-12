@@ -29,6 +29,8 @@ export const canvasModel = {
     photoSearchOpen: false,
     photoSearchQuery: "",
     photoSearchHint: "",        // shown when Search is clicked without a keyword
+    photoSearchOrientation: "any",  // "any" / "landscape" / "portrait" / "squarish"
+    photoSearchColor: "any",        // "any" or an Unsplash colour, e.g. "blue", "black_and_white"
     photoSearchPromiseState: {},
     selectedPhoto: null,        // photo used to fill the selected shape: { id, url, photographer, photographerLink }
 
@@ -67,7 +69,18 @@ export const canvasModel = {
             this.photoSearchHint = "Please type a keyword first, e.g. forest";
             return;
         }
-        resolvePromise(searchPhotos(query), this.photoSearchPromiseState);
+        const filters = { orientation: this.photoSearchOrientation, color: this.photoSearchColor };
+        resolvePromise(searchPhotos(query, filters), this.photoSearchPromiseState);
+    },
+
+    // changing a filter searches again if results are already shown
+    setPhotoSearchOrientation(orientation){
+        this.photoSearchOrientation = orientation;
+        if (this.photoSearchPromiseState.promise) this.doPhotoSearch();
+    },
+    setPhotoSearchColor(color){
+        this.photoSearchColor = color;
+        if (this.photoSearchPromiseState.promise) this.doPhotoSearch();
     },
     selectPhoto(photo){
         this.selectedPhoto = {

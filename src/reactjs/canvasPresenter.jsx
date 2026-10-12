@@ -49,11 +49,15 @@ const Canvas = observer(// observer needed for the presenter to update (its view
             {props.model.photoSearchOpen &&
                 <PhotoSearchView query={props.model.photoSearchQuery}
                                  hint={props.model.photoSearchHint}
+                                 orientation={props.model.photoSearchOrientation}
+                                 color={props.model.photoSearchColor}
                                  photos={searchState.data}
                                  loading={searchState.promise && !searchState.data && !searchState.error}
                                  error={searchState.error}
 
                                  onQueryChange={handlerPhotoQueryChangeACB}
+                                 onOrientationChange={handlerPhotoOrientationChangeACB}
+                                 onColorChange={handlerPhotoColorChangeACB}
                                  onSearch={handlerPhotoSearchACB}
                                  onPhotoSelect={handlerPhotoSelectACB}
                                  onClose={handlerPhotoSearchCloseACB}/>}
@@ -93,6 +97,8 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         // photo search popup
         function handlerPhotoQueryChangeACB(query){ props.model.setPhotoSearchQuery(query); }
         function handlerPhotoSearchACB(){ props.model.doPhotoSearch(); }
+        function handlerPhotoOrientationChangeACB(orientation){ props.model.setPhotoSearchOrientation(orientation); }
+        function handlerPhotoColorChangeACB(color){ props.model.setPhotoSearchColor(color); }
         function handlerPhotoSelectACB(photo){ props.model.selectPhoto(photo); }
         function handlerPhotoSearchCloseACB(){ props.model.closePhotoSearch(); }
 

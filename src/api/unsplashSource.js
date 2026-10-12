@@ -2,8 +2,12 @@ const ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 const BASE_URL = "https://api.unsplash.com";
 
 // search photos by keyword, resolves to an array of photo objects
-export function searchPhotos(query){
-    const url = BASE_URL + "/search/photos?" + new URLSearchParams({ query: query, per_page: 12 });
+// filters: { orientation, color }, "any" means no filter, so that parameter is left out
+export function searchPhotos(query, filters){
+    const orientationParam = filters.orientation === "any" ? {} : { orientation: filters.orientation };
+    const colorParam = filters.color === "any" ? {} : { color: filters.color };
+    const params = { query: query, per_page: 12, ...orientationParam, ...colorParam };
+    const url = BASE_URL + "/search/photos?" + new URLSearchParams(params);
 
     return fetch(url, { headers: { Authorization: "Client-ID " + ACCESS_KEY } })
         .then(gotResponseACB)

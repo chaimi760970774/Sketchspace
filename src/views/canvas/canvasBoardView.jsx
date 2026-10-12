@@ -4,10 +4,7 @@ import { Stage, Layer, Transformer } from "react-konva";
 import { PhotoNode } from "./nodes/photoNode.jsx";
 import { ShapeNode } from "./nodes/shapeNode.jsx";
 import { CutoutNode } from "./nodes/cutoutNode.jsx";
-
-// fixed size so every collaborator uses the same coordinates
-const CANVAS_WIDTH = 900;
-const CANVAS_HEIGHT = 600;
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from "/src/utils/canvasSize.js";
 
 export function CanvasBoardView(props){
     // Konva needs refs to reach the canvas; these are UI-only, all app data stays in the model

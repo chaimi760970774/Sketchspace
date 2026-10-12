@@ -168,7 +168,7 @@ button { font: inherit; cursor: pointer; }
 .shape-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; justify-items: center; }
 .shape { width: 100px; height: 100px; background: #d9d9d9; border: none; }
 .shape { cursor: grab; }
-.shape.selected { background: #999; }
+.shape:hover { background: #bbb; }
 .shape-triangle { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
 .shape-star { clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
 .shape-circle { border-radius: 50%; }

@@ -27,8 +27,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         renderBoard={renderBoardCB}>
 
                 {props.model.currentTool === "shape"
-                    ? <ShapePanelView selectedShape={props.model.selectedShape}
-                                      selectedPhoto={props.model.selectedPhoto}
+                    ? <ShapePanelView selectedPhoto={props.model.selectedPhoto}
                                       canCut={props.model.canCut()}
                                       canFill={props.model.canFill()}
                                       shapeActionHint={props.model.getShapeActionHint()}
@@ -36,7 +35,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                                       onCut={handlerCutACB}
                                       onFill={handlerFillACB}
                                       onFillColorChange={handlerFillColorChangeACB}
-                                      onShapeSelect={handlerShapeSelectACB}
+                                      onShapeClick={handlerShapeClickACB}
                                       onUploadPhoto={handlerUploadPhotoACB}/>
 
                     : <StrokePanelView strokeType={props.model.strokeType}
@@ -49,6 +48,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
 
             {props.model.photoSearchOpen &&
                 <PhotoSearchView query={props.model.photoSearchQuery}
+                                 hint={props.model.photoSearchHint}
                                  photos={searchState.data}
                                  loading={searchState.promise && !searchState.data && !searchState.error}
                                  error={searchState.error}
@@ -84,7 +84,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerElementChangeACB(id, changes){ props.model.updateElement(id, changes); }
 
         // shape panel
-        function handlerShapeSelectACB(shape){ props.model.selectShape(shape); }
+        function handlerShapeClickACB(shape){ props.model.addShapeAtCentre(shape); }
         function handlerUploadPhotoACB(){ props.model.openPhotoSearch(); }
         function handlerCutACB(){ props.model.cutWithSelectedShape(); }
         function handlerFillACB(){ props.model.fillSelectedShape(); }

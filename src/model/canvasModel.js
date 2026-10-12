@@ -1,6 +1,7 @@
 import { resolvePromise } from "/src/utils/resolvePromise.js";
 import { searchPhotos, trackDownload } from "/src/api/unsplashSource.js";
 import { toLocalPoint, getCentre, isPointInside } from "/src/utils/geometry.js";
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from "/src/utils/canvasSize.js";
 
 // elements, tools, cutting, Unsplash
 export const canvasModel = {
@@ -19,7 +20,6 @@ export const canvasModel = {
 
     // Tools
     currentTool: "shape",       // left panel: "shape" / "stroke"
-    selectedShape: null,        // "triangle" / "star" / "circle" / "square"
     strokeColor: "#000000",
     strokeWidth: 4,
     strokeType: "pencil",       // "pencil" / "pen"
@@ -28,6 +28,7 @@ export const canvasModel = {
     // Unsplash photo search
     photoSearchOpen: false,
     photoSearchQuery: "",
+    photoSearchHint: "",        // shown when Search is clicked without a keyword
     photoSearchPromiseState: {},
     selectedPhoto: null,        // photo used to fill the selected shape: { id, url, photographer, photographerLink }
 
@@ -48,7 +49,6 @@ export const canvasModel = {
 
     // Tools
     setCurrentTool(tool){ this.currentTool = tool; },
-    selectShape(shape){ this.selectedShape = shape; },
     setStrokeColor(color){ this.strokeColor = color; },
     setStrokeWidth(width){ this.strokeWidth = width; },
     setStrokeType(type){ this.strokeType = type; },
@@ -57,10 +57,17 @@ export const canvasModel = {
     // Unsplash photo search
     openPhotoSearch(){ this.photoSearchOpen = true; },
     closePhotoSearch(){ this.photoSearchOpen = false; },
-    setPhotoSearchQuery(query){ this.photoSearchQuery = query; },
+    setPhotoSearchQuery(query){
+        this.photoSearchQuery = query;
+        this.photoSearchHint = "";
+    },
     doPhotoSearch(){
-        if (!this.photoSearchQuery) return;
-        resolvePromise(searchPhotos(this.photoSearchQuery), this.photoSearchPromiseState);
+        const query = this.photoSearchQuery.trim();
+        if (!query) {
+            this.photoSearchHint = "Please type a keyword first, e.g. forest";
+            return;
+        }
+        resolvePromise(searchPhotos(query), this.photoSearchPromiseState);
     },
     selectPhoto(photo){
         this.selectedPhoto = {
@@ -114,6 +121,11 @@ export const canvasModel = {
             rotation: 0,
             color: null,                // null = dashed template, a colour = filled shape
         });
+    },
+
+    // clicking a shape in the panel puts it in the middle of the canvas
+    addShapeAtCentre(shape){
+        this.addShapeElement(shape, { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 });
     },
 
     updateElement(id, changes){

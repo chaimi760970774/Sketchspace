@@ -1,11 +1,14 @@
 import "/style.css"
+import { formatDate } from "/src/utils/formatDate.js";
 
 export function MyWorkView(props){
     return (
         <div className="page-content">
-            <button className="new-canvas-big" onClick={props.onNewCanvas}>+</button>
+            <button className="new-canvas-big" aria-label="New canvas" disabled={props.creating} onClick={props.onNewCanvas}>
+                {props.creating ? <div className="spinner" role="status" aria-label="Creating canvas"></div> : "+"}
+            </button>
 
-            <input className="search-input" placeholder="Search"
+            <input className="search-input" placeholder="Search" aria-label="Search canvases"
                    value={props.searchText} onChange={searchChangeACB}/>
 
             <div className="folder-bar">
@@ -16,15 +19,25 @@ export function MyWorkView(props){
                 {renderNewFolder()}
             </div>
 
-            {props.canvases.length === 0 && <div className="empty-text">{emptyText()}</div>}
-
-            <div className="card-list">
-                {props.canvases.map(cardCB)}
-            </div>
+            {renderCanvases()}
         </div>
     );
 
     function searchChangeACB(evt){ props.onSearchChange(evt.target.value); }
+
+    function renderCanvases(){
+        if (props.loading) return <div className="spinner" role="status" aria-label="Loading canvases"></div>;
+        if (props.error)
+            return (
+                <div className="load-error" role="alert">
+                    <span>Could not load canvases: {props.error}</span>
+                    <button className="small-button" onClick={props.onRetry}>Retry</button>
+                </div>
+            );
+        if (props.canvases.length === 0) return <div className="empty-text">{emptyText()}</div>;
+
+        return <div className="card-list">{props.canvases.map(cardCB)}</div>;
+    }
 
     function emptyText(){
         if (props.searchText) return "No canvas found";
@@ -97,19 +110,41 @@ export function MyWorkView(props){
         );
     }
 
-    // Canvas cards (draggable onto folder tabs)
+    // Canvas cards (draggable onto folder tabs), with a share switch and a delete button
     function cardCB(canvas){
+        const busy = props.busyCanvasIds.includes(canvas._id);     // a request for this canvas is running
+
         function clickCardACB(){ props.onCardClick(canvas); }
         function dragStartACB(evt){
-            evt.dataTransfer.setData("text/plain", canvas.id);
+            evt.dataTransfer.setData("text/plain", canvas._id);
             evt.dataTransfer.effectAllowed = "move";     // browser drag API, can only be set by assignment
         }
         function dragEndACB(){ props.onDragOverTab(null); }     // also clears the highlight if dropped elsewhere
 
+        // the controls sit on the card, so clicks on them must not also open the canvas
+        function stopClickACB(evt){ evt.stopPropagation(); }
+        function shareChangeACB(evt){ props.onShareChange(canvas._id, evt.target.checked); }
+        function deleteACB(evt){
+            evt.stopPropagation();
+            const confirmed = window.confirm("Delete \"" + canvas.name + "\"? This cannot be undone.");
+            if (confirmed) props.onDeleteCanvas(canvas._id);
+        }
+
         return (
-            <div key={canvas.id} className="card-item" draggable
+            <div key={canvas._id} className="card-item" draggable={!busy} aria-busy={busy}
                  onClick={clickCardACB} onDragStart={dragStartACB} onDragEnd={dragEndACB}>
-                {canvas.title}
+                <button className="card-delete" aria-label={"Delete " + canvas.name} title="Delete canvas"
+                        disabled={busy} onClick={deleteACB}>×</button>
+
+                <div className="card-name">{canvas.name}</div>
+                <div className="card-date">Updated {formatDate(canvas.updatedAt)}</div>
+
+                <label className="card-share" onClick={stopClickACB}>
+                    <input type="checkbox" checked={canvas.isShared} disabled={busy} onChange={shareChangeACB}/>
+                    {canvas.isShared ? "Shared" : "Private"}
+                </label>
+
+                {busy && <div className="spinner spinner-small" role="status" aria-label="Saving"></div>}
             </div>
         );
     }

@@ -12,7 +12,8 @@ export function PhotoNode(props){
                        width={props.element.width}
                        height={props.element.height}
                        rotation={props.element.rotation}
-                       draggable
+                       draggable={props.interactive}
+                       listening={props.interactive}
                        onClick={props.onSelect}
                        onTap={props.onSelect}
                        onDragStart={props.onSelect}

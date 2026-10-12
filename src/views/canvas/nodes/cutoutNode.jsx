@@ -16,7 +16,8 @@ export function CutoutNode(props){
                   rotation={element.rotation}
                   sceneFunc={drawACB}
                   hitFunc={hitACB}
-                  draggable
+                  draggable={props.interactive}
+                  listening={props.interactive}
                   onClick={props.onSelect}
                   onTap={props.onSelect}
                   onDragStart={props.onSelect}

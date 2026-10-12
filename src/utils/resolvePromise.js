@@ -22,3 +22,8 @@ export function resolvePromise(promise, promiseState){
             promiseState.error = someError;
     }
 }
+
+// true while the promise is running (started, but neither data nor error yet)
+export function isPending(promiseState){
+    return Boolean(promiseState.promise) && !promiseState.data && !promiseState.error;
+}

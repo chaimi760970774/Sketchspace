@@ -21,7 +21,8 @@ export function ShapeNode(props){
                   shadowEnabled={isTemplate}
                   shadowColor="white"
                   shadowBlur={3}          // white glow so the dashed line is still visible on dark photos
-                  draggable
+                  draggable={props.interactive}
+                  listening={props.interactive}
                   onClick={props.onSelect}
                   onTap={props.onSelect}
                   onDragStart={props.onSelect}

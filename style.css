@@ -114,15 +114,40 @@ button { font: inherit; cursor: pointer; }
 
 .card-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 30px; }
 .card-item {
+    position: relative;         /* the delete button and the spinner sit in its corners */
     height: 220px;
     border: 1px solid #333;
     background: #eaeaea;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 8px;
+    padding: 12px;
     font-size: 18px;
+    text-align: center;
     cursor: pointer;
 }
+.card-name { overflow-wrap: anywhere; }
+.card-date { font-size: 13px; color: #777; }
+.card-delete {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: #777;
+}
+.card-delete:hover { color: #c0392b; }
+.card-share { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+.card-item .spinner-small { position: absolute; top: 10px; left: 10px; }
+.card-item[aria-busy="true"] { opacity: 0.6; }
+
+.outline-button:disabled, .new-canvas-big:disabled, .canvas-name:disabled { cursor: progress; opacity: 0.6; }
+
+/* list could not be loaded */
+.load-error { display: flex; align-items: center; gap: 16px; color: #c0392b; margin: 20px 0; }
 
 .new-canvas-big {
     width: 100%;
@@ -224,6 +249,40 @@ button { font: inherit; cursor: pointer; }
     padding: 20px;
 }
 .konva-stage { margin: auto; background: white; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+.konva-stage.drawing { cursor: crosshair; }
+
+/* canvas name and stroke save status in the topbar */
+.canvas-title-group { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.canvas-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: 1px dashed transparent;
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: left;
+}
+.canvas-name:hover { border-color: #999; }
+.canvas-name-input { font-size: 20px; padding: 2px 6px; width: 220px; }
+.save-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #777; padding-left: 6px; }
+.save-status-failed { color: #c0392b; }
+
+/* shown instead of the canvas while it is created / opened, or when that failed */
+.canvas-status {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: white;
+    font-size: 18px;
+}
+.canvas-status h2 { margin: 0; }
+.canvas-status-buttons { display: flex; gap: 16px; }
 
 
 .panel-label { font-size: 16px; margin-bottom: -18px; }
@@ -273,6 +332,7 @@ button { font: inherit; cursor: pointer; }
     animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+.spinner-small { display: inline-block; width: 14px; height: 14px; margin: 0; border-width: 2px; }
 
 .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
 .photo-item { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }

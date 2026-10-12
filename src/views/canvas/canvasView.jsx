@@ -29,6 +29,11 @@ export function CanvasView(props){
                         <span className="collaborator-count">{props.collaborators.length}</span>
                     </div>
 
+                    <div className="canvas-title-group">
+                        {renderName()}
+                        {renderStrokeSaveStatus()}
+                    </div>
+
                     {/* not built yet, disabled with a visible note */}
                     <div className="coming-soon-group">
                         <div>
@@ -39,9 +44,19 @@ export function CanvasView(props){
                     </div>
 
                     <div className="topbar-right">
-                        {renderComingSoon("Save")}
+                        {/* the server can only store strokes so far */}
+                        <div className="coming-soon-group">
+                            <button className="small-button" disabled>Save</button>
+                            <span className="coming-soon">Photos and shapes can't be saved yet</span>
+                        </div>
                         <button className="small-button" onClick={exportACB}>Export</button>
-                        {renderComingSoon("Share")}
+                        <div className="coming-soon-group">
+                            <button className="small-button" aria-pressed={props.isShared}
+                                    disabled={props.busy} onClick={props.onShareToggle}>
+                                {props.isShared ? "Unshare" : "Share"}
+                            </button>
+                            <span className="coming-soon">{props.isShared ? "Shared in Gallery" : "Private"}</span>
+                        </div>
                     </div>
                 </div>
 
@@ -61,13 +76,46 @@ export function CanvasView(props){
         props.onExport(succeeded);
     }
 
-    function renderComingSoon(label){
+    // the canvas name; click it to rename (Enter saves, Esc cancels, clicking away saves)
+    function renderName(){
+        if (!props.renaming)
+            return (
+                <button className="canvas-name" title="Click to rename" disabled={props.busy} onClick={props.onRenameStart}>
+                    {props.canvasName}
+                    {props.busy && <span className="spinner spinner-small" role="status" aria-label="Saving"></span>}
+                </button>
+            );
+
+        function nameChangeACB(evt){ props.onNameDraftChange(evt.target.value); }
+        function keyDownACB(evt){
+            if (evt.key === "Enter") props.onRenameSave();
+            if (evt.key === "Escape") props.onRenameCancel();
+        }
+
         return (
-            <div className="coming-soon-group">
-                <button className="small-button" disabled>{label}</button>
-                <span className="coming-soon">Coming soon</span>
-            </div>
+            <>
+                <input className="canvas-name-input" autoFocus aria-label="Canvas name"
+                       aria-invalid={Boolean(props.nameError)}
+                       value={props.nameDraft} onChange={nameChangeACB}
+                       onKeyDown={keyDownACB} onBlur={props.onRenameSave}/>
+                {props.nameError && <span className="field-error">{props.nameError}</span>}
+            </>
         );
+    }
+
+    // whether the strokes drawn here reached the server
+    function renderStrokeSaveStatus(){
+        if (props.strokeSaveStatus === "saving")
+            return (
+                <span className="save-status">
+                    <span className="spinner spinner-small" aria-hidden="true"></span> Saving stroke...
+                </span>
+            );
+        if (props.strokeSaveStatus === "failed")
+            return <span className="save-status save-status-failed" role="alert">Some strokes were not saved (shown faded)</span>;
+        if (props.strokeSaveStatus === "saved")
+            return <span className="save-status">All strokes saved</span>;
+        return null;
     }
 
     function toolClass(tool){

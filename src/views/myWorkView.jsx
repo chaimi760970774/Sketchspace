@@ -61,7 +61,8 @@ export function MyWorkView(props){
 
         function deleteFolderACB(evt){
             evt.stopPropagation();      // do not also open the tab
-            props.onDeleteFolder(folderId);
+            const confirmed = window.confirm("Delete folder \"" + label + "\"? Its canvases stay in All.");
+            if (confirmed) props.onDeleteFolder(folderId);
         }
 
         return (
@@ -74,7 +75,7 @@ export function MyWorkView(props){
         );
     }
 
-    // "+" button, or the name input after clicking it (Enter creates, Esc cancels)
+    // "+" button, or the name input after clicking it (Enter creates, Esc cancels, clicking away creates if a name was typed)
     function renderNewFolder(){
         if (!props.newFolderOpen)
             return <button className="folder-add" title="New folder" onClick={props.onNewFolderOpen}>+</button>;
@@ -85,9 +86,15 @@ export function MyWorkView(props){
             if (evt.key === "Escape") props.onNewFolderCancel();
         }
 
-        return <input className="folder-name-input" placeholder="Folder name" autoFocus
-                      value={props.newFolderName} onChange={nameChangeACB}
-                      onKeyDown={keyDownACB} onBlur={props.onNewFolderCreate}/>;
+        return (
+            <>
+                <input className="folder-name-input" placeholder="Folder name" autoFocus
+                       aria-label="New folder name" aria-invalid={Boolean(props.newFolderError)}
+                       value={props.newFolderName} onChange={nameChangeACB}
+                       onKeyDown={keyDownACB} onBlur={props.onNewFolderLeave}/>
+                {props.newFolderError && <span className="field-error">{props.newFolderError}</span>}
+            </>
+        );
     }
 
     // Canvas cards (draggable onto folder tabs)

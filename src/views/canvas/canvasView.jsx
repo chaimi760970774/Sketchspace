@@ -22,13 +22,20 @@ export function CanvasView(props){
                         {props.collaborators.map(collaboratorCB)}
                         <span className="collaborator-count">{props.collaborators.length}</span>
                     </div>
-                    <button className="icon-button" onClick={props.onUndo}>←</button>
-                    <button className="icon-button" onClick={props.onRedo}>→</button>
+
+                    {/* not built yet, disabled with a visible note */}
+                    <div className="coming-soon-group">
+                        <div>
+                            <button className="icon-button" disabled aria-label="Undo">←</button>
+                            <button className="icon-button" disabled aria-label="Redo">→</button>
+                        </div>
+                        <span className="coming-soon">Coming soon</span>
+                    </div>
 
                     <div className="topbar-right">
-                        <button className="small-button" onClick={props.onSave}>Save</button>
+                        {renderComingSoon("Save")}
                         <button className="small-button" onClick={props.onExport}>Export</button>
-                        <button className="small-button" onClick={props.onShare}>Share</button>
+                        {renderComingSoon("Share")}
                     </div>
                 </div>
 
@@ -41,6 +48,15 @@ export function CanvasView(props){
             </div>
         </div>
     );
+
+    function renderComingSoon(label){
+        return (
+            <div className="coming-soon-group">
+                <button className="small-button" disabled>{label}</button>
+                <span className="coming-soon">Coming soon</span>
+            </div>
+        );
+    }
 
     function toolClass(tool){
         return props.currentTool === tool ? "sidebar-item tool-active" : "sidebar-item";

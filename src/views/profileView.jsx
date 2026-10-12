@@ -33,7 +33,11 @@ export function ProfileView(props){
     function fieldRowCB(field){
         const isEditing = props.editingField === field.key;
 
-        function clickModifyACB(){ props.onModify(field.key); }
+        // ask first, so switching to another field does not silently throw away what was typed
+        function clickModifyACB(){
+            if (props.hasUnsavedDraft && !window.confirm("You have unsaved changes. Discard them?")) return;
+            props.onModify(field.key);
+        }
         function draftChangeACB(evt){ props.onDraftChange(evt.target.value); }
 
         return (
@@ -41,12 +45,14 @@ export function ProfileView(props){
                 <div className="profile-field">
                     <div>{field.label}</div>
                     {isEditing
-                        ? <input className="profile-input" value={props.draft} onChange={draftChangeACB}/>
+                        ? <input className="profile-input" aria-label={field.label} aria-invalid={Boolean(props.error)}
+                                 value={props.draft} onChange={draftChangeACB}/>
                         : <div className="profile-value">{props.user[field.key]}</div>}
+                    {isEditing && props.error && <div className="field-error">{props.error}</div>}
                 </div>
 
                 {isEditing
-                    ? <button className="pill-button" onClick={props.onSave}>Save</button>
+                    ? <button className="pill-button" disabled={Boolean(props.error)} onClick={props.onSave}>Save</button>
                     : <button className="pill-button" onClick={clickModifyACB}>Modify</button>}
             </div>
         );

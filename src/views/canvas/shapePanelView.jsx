@@ -20,6 +20,8 @@ export function ShapePanelView(props){
                 <button className="small-button" disabled={!props.canFill} onClick={props.onFill}
                         title="Select a shape, pick a colour, then fill">Fill</button>
             </div>
+            {/* tells the user why a button above is disabled */}
+            {props.shapeActionHint && <div className="action-hint">{props.shapeActionHint}</div>}
 
             <div className="panel-box">
                 {props.selectedPhoto &&

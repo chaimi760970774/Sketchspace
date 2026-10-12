@@ -8,6 +8,8 @@ const Profile = observer(// observer needed for the presenter to update (its vie
         return <ProfileView user={props.model.user}
                             editingField={props.model.editingField}
                             draft={props.model.profileDraft}
+                            error={props.model.getProfileError()}
+                            hasUnsavedDraft={props.model.hasUnsavedDraft()}
 
                             onModify={handlerModifyACB}
                             onDraftChange={handlerDraftChangeACB}

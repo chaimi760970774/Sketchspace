@@ -1,4 +1,4 @@
-// saves everything on the Konva stage as a PNG file
+// saves everything on the Konva stage as a PNG file, returns true if it worked
 // The Konva nodes, the <canvas> and the <a> link below are browser objects that can only be
 // configured by changing them (hide/show, width, fillStyle, href ...), so mutation is unavoidable here.
 export function downloadStageImage(stage, fileName){
@@ -17,11 +17,17 @@ export function downloadStageImage(stage, fileName){
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.drawImage(drawing, 0, 0);
 
-    // click a temporary link to start the download
-    const link = document.createElement("a");
-    link.href = canvas.toDataURL("image/png");
-    link.download = fileName;
-    link.click();
+    // toDataURL throws if a photo on the canvas was loaded without CORS permission
+    try {
+        // click a temporary link to start the download
+        const link = document.createElement("a");
+        link.href = canvas.toDataURL("image/png");
+        link.download = fileName;
+        link.click();
+        return true;
+    } catch (error) {
+        return false;
+    }
 
     function hideCB(node){ node.hide(); }
     function showCB(node){ node.show(); }

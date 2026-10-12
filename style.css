@@ -147,6 +147,7 @@ button { font: inherit; cursor: pointer; }
 .profile-value { color: #777; }
 .profile-input { font-size: 18px; padding: 4px 8px; }
 .pill-button { border: none; border-radius: 30px; background: #d4d4d4; padding: 10px 40px; font-size: 20px; }
+.pill-button:disabled { opacity: 0.4; cursor: default; }
 
 
 /* ========== Canvas ========== */
@@ -175,6 +176,7 @@ button { font: inherit; cursor: pointer; }
 .shape-actions { display: flex; align-items: center; justify-content: center; gap: 10px; color: #777; }
 .shape-actions .small-button { padding: 6px 16px; }
 .fill-color { width: 40px; height: 40px; border: none; background: none; padding: 0; }
+.action-hint { font-size: 14px; color: #777; text-align: center; margin-top: -20px; }
 
 
 .canvas-main { flex: 1; background: white; padding: 30px 40px; display: flex; flex-direction: column; gap: 24px; }
@@ -191,7 +193,12 @@ button { font: inherit; cursor: pointer; }
 .collaborator-avatar:first-child { margin-left: 0; }
 .collaborator-count { margin-left: 10px; font-size: 22px; }
 .icon-button { background: none; border: none; font-size: 24px; }
-.topbar-right { margin-left: auto; display: flex; gap: 24px; }
+.topbar-right { margin-left: auto; display: flex; align-items: flex-start; gap: 24px; }
+.icon-button:disabled { opacity: 0.4; cursor: default; }
+
+/* a disabled button with a "Coming soon" note under it */
+.coming-soon-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.coming-soon { font-size: 11px; color: #888; }
 .small-button { border: none; border-radius: 8px; background: #d9d9d9; padding: 6px 28px; font-size: 18px; }
 .small-button:disabled { opacity: 0.4; cursor: default; }
 .canvas-area {
@@ -325,3 +332,30 @@ button { font: inherit; cursor: pointer; }
 .card-item[draggable="true"] {
     cursor: grab;
 }
+
+
+/* ========== Form errors ========== */
+.field-error { color: #c0392b; font-size: 14px; }
+.folder-bar .field-error { flex-shrink: 0; }
+
+
+/* ========== Toast ========== */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;               /* above the photo search popup */
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px 12px 20px;
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.toast-success { background: #2e7d32; }
+.toast-error { background: #c0392b; }
+.toast-info { background: #444; }
+.toast-close { background: none; border: none; color: white; font-size: 20px; padding: 0 4px; }

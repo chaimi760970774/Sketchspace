@@ -4,6 +4,7 @@ import { Profile } from "./profilePresenter.jsx";
 import { Canvas } from "./canvasPresenter.jsx";
 import { Login } from "./loginPresenter.jsx";
 import { Sidebar } from "./sidebarPresenter.jsx";
+import { Toast } from "./toastPresenter.jsx";
 
 import { observer } from "mobx-react-lite";
 import { createHashRouter, RouterProvider, Outlet } from "react-router-dom";
@@ -15,6 +16,7 @@ const ReactRoot = observer(
         return (
             <div>
                 <RouterProvider router={props.router}/>
+                <Toast model={props.model}/>
             </div>
         );
     }

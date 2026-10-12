@@ -40,6 +40,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                                       selectedPhoto={props.model.selectedPhoto}
                                       canCut={props.model.canCut()}
                                       canFill={props.model.canFill()}
+                                      shapeActionHint={props.model.getShapeActionHint()}
                                       fillColor={props.model.fillColor}
                                       onCut={handlerCutACB}
                                       onFill={handlerFillACB}
@@ -99,7 +100,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerStrokeColorChangeACB(color){ props.model.setStrokeColor(color); }
 
         // topbar
-        function handlerExportACB(){ downloadStageImage(stageRef.current, "sketchspace.png"); }
+        function handlerExportACB(){ props.model.showExportResult(downloadStageImage(stageRef.current, "sketchspace.png")); }
     }
 );
 

@@ -14,6 +14,7 @@ const MyWork = observer(// observer needed for the presenter to update (its view
                            dragOverTab={props.model.dragOverTab}
                            newFolderOpen={props.model.newFolderOpen}
                            newFolderName={props.model.newFolderName}
+                           newFolderError={props.model.newFolderError}
 
                            onSearchChange={handlerSearchChangeACB}
                            onFolderClick={handlerFolderClickACB}
@@ -21,6 +22,7 @@ const MyWork = observer(// observer needed for the presenter to update (its view
                            onNewFolderNameChange={handlerNewFolderNameChangeACB}
                            onNewFolderCreate={handlerNewFolderCreateACB}
                            onNewFolderCancel={handlerNewFolderCancelACB}
+                           onNewFolderLeave={handlerNewFolderLeaveACB}
                            onDeleteFolder={handlerDeleteFolderACB}
                            onDragOverTab={handlerDragOverTabACB}
                            onMoveCanvas={handlerMoveCanvasACB}
@@ -33,6 +35,7 @@ const MyWork = observer(// observer needed for the presenter to update (its view
         function handlerNewFolderNameChangeACB(name){ props.model.setNewFolderName(name); }
         function handlerNewFolderCreateACB(){ props.model.createFolder(); }
         function handlerNewFolderCancelACB(){ props.model.cancelNewFolder(); }
+        function handlerNewFolderLeaveACB(){ props.model.leaveNewFolder(); }
         function handlerDeleteFolderACB(folderId){ props.model.deleteFolder(folderId); }
         function handlerDragOverTabACB(tab){ props.model.setDragOverTab(tab); }
         function handlerMoveCanvasACB(canvasId, folderId){ props.model.moveCanvasToFolder(canvasId, folderId); }

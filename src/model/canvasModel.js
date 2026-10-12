@@ -212,6 +212,21 @@ export const canvasModel = {
         this.addElement(cutout);
     },
 
+    // why Mask / Fill cannot be used right now, empty when both can be used
+    getShapeActionHint(){
+        const shape = this.getSelectedShape();
+        if (!shape) return "Select a shape on the canvas to mask or fill it";
+        if (shape.color) return "Only dashed shapes can mask a photo";       // Fill still works, it changes the colour
+        if (!this.findPhotoUnder(shape)) return "Move the shape onto a photo to mask it";
+        return "";
+    },
+
+    // Export
+    showExportResult(succeeded){
+        if (succeeded) this.showToast("Canvas exported as PNG", "success");
+        else this.showToast("Export failed, please try again", "error");
+    },
+
     // one credit per photographer used on the canvas, required by Unsplash guidelines
     getPhotoCredits(){
         function hasPhotographerCB(element){ return element.photographer; }     // shapes have no photographer

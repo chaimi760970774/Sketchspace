@@ -35,6 +35,7 @@ export const galleryModel = {
     dragOverTab: null,          // tab a canvas is being dragged over: "all", a folder id, or null
     newFolderOpen: false,       // true while the new folder name input is shown
     newFolderName: "",
+    newFolderError: "",         // shown next to the input when the name cannot be used
 
 
 
@@ -81,21 +82,50 @@ export const galleryModel = {
     },
     cancelNewFolder(){
         this.newFolderName = "";        // cleared first so a following blur does not create the folder
+        this.newFolderError = "";
         this.newFolderOpen = false;
     },
-    setNewFolderName(name){ this.newFolderName = name; },
+    setNewFolderName(name){
+        this.newFolderName = name;
+        this.newFolderError = "";       // the user is fixing the name, hide the old error
+    },
 
-    // an empty name just closes the input without creating anything
+    getFolderName(folderId){
+        function isTargetCB(folder){ return folder.id === folderId; }
+        const folder = this.folders.find(isTargetCB);
+        return folder ? folder.name : "";
+    },
+
+    // error message for a new folder name, empty if the name is fine
+    checkFolderName(name){
+        if (!name) return "Please type a folder name";
+        function isSameNameCB(folder){ return folder.name.toLowerCase() === name.toLowerCase(); }
+        if (this.getMyFolders().some(isSameNameCB)) return "\"" + name + "\" already exists";
+        return "";
+    },
+
+    // the input stays open with an error message if the name cannot be used
     createFolder(){
         const name = this.newFolderName.trim();
-        if (name) {
-            this.folders = [...this.folders, { id: crypto.randomUUID(), name: name, owner: this.user.id }];
+        const error = this.checkFolderName(name);
+        if (error) {
+            this.newFolderError = error;
+            return;
         }
+        this.folders = [...this.folders, { id: crypto.randomUUID(), name: name, owner: this.user.id }];
         this.cancelNewFolder();
+        this.showToast("Created folder \"" + name + "\"", "success");
+    },
+
+    // clicking away from an empty input just closes it, otherwise it counts as creating
+    leaveNewFolder(){
+        if (this.newFolderName.trim()) this.createFolder();
+        else this.cancelNewFolder();
     },
 
     // the folder disappears, its canvases stay and are still shown in "All"
     deleteFolder(folderId){
+        const name = this.getFolderName(folderId);
         function isOtherFolderCB(folder){ return folder.id !== folderId; }
         function takeOutCB(canvas){
             if (canvas.folderId !== folderId) return canvas;
@@ -104,15 +134,29 @@ export const galleryModel = {
         this.folders = this.folders.filter(isOtherFolderCB);
         this.canvases = this.canvases.map(takeOutCB);
         if (this.selectedFolderId === folderId) this.selectedFolderId = null;
+        this.showToast("Deleted folder \"" + name + "\"", "success");
     },
 
     // folderId null = take the canvas out of its folder (dropped on "All")
     moveCanvasToFolder(canvasId, folderId){
+        function isTargetCB(canvas){ return canvas.id === canvasId; }
+        const canvas = this.canvases.find(isTargetCB);
+        if (!canvas) return;
+
+        const targetName = folderId ? this.getFolderName(folderId) : "All";
+        if (canvas.folderId === folderId) {
+            this.showToast("\"" + canvas.title + "\" is already in " + targetName, "info");
+            return;
+        }
+
         function moveCB(canvas){
             if (canvas.id !== canvasId) return canvas;
             return { ...canvas, folderId: folderId };
         }
         this.canvases = this.canvases.map(moveCB);
+
+        if (folderId) this.showToast("Moved to " + targetName, "success");
+        else this.showToast("Removed from folder", "success");
     },
 
     // Drag and drop highlight

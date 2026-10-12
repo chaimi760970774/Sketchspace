@@ -1,3 +1,8 @@
+// simple check: something@something.something
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const FIELD_LABELS = { name: "Name", email: "Email" };
+
 // user, login, profile
 export const userModel = {
 
@@ -37,9 +42,30 @@ export const userModel = {
         this.profileDraft = this.user[field];
     },
     setProfileDraft(text){ this.profileDraft = text; },
-    saveEdit(){
-        this.user = { ...this.user, [this.editingField]: this.profileDraft };
-        this.editingField = null;
+
+    // error message for the field being edited, empty if the draft can be saved
+    getProfileError(){
+        const value = this.profileDraft.trim();
+        if (this.editingField === "name" && !value) return "Name cannot be empty";
+        if (this.editingField === "email" && !EMAIL_PATTERN.test(value)) return "Please enter a valid email, e.g. name@example.com";
+        return "";
     },
-    setPhotoURL(url){ this.user = { ...this.user, photoURL: url }; },
+
+    // true if the user typed something that is not saved yet
+    hasUnsavedDraft(){
+        if (!this.editingField) return false;
+        return this.profileDraft !== this.user[this.editingField];
+    },
+
+    saveEdit(){
+        if (!this.editingField || this.getProfileError()) return;
+        const field = this.editingField;
+        this.user = { ...this.user, [field]: this.profileDraft.trim() };
+        this.editingField = null;
+        this.showToast(FIELD_LABELS[field] + " saved", "success");
+    },
+    setPhotoURL(url){
+        this.user = { ...this.user, photoURL: url };
+        this.showToast("Profile photo updated", "success");
+    },
 };

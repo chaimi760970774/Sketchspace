@@ -5,9 +5,6 @@ import { validateStroke } from "/src/utils/validateStroke.js";
 // the server has the layers foreground / middleground / background; strokes go on the top one for now
 const STROKE_LAYER_ID = "foreground";
 
-// pencil is a bit see-through, pen is solid
-const BRUSH_OPACITY = { pencil: 0.6, pen: 1 };
-
 // the canvas that is open: its info from the server, renaming, sharing and its strokes
 export const openCanvasModel = {
 
@@ -127,8 +124,6 @@ export const openCanvasModel = {
     },
 
     // Strokes
-    getStrokeOpacity(){ return BRUSH_OPACITY[this.strokeType]; },
-
     // The one place a new stroke is added. For real-time drawing later, send it with
     // socket.io "stroke:add" here instead of the REST addStroke.
     drawStroke(path){
@@ -141,7 +136,7 @@ export const openCanvasModel = {
             brush: this.strokeType,
             size: this.strokeWidth,
             color: this.strokeColor,
-            opacity: this.getStrokeOpacity(),
+            opacity: this.strokeOpacity,
         };
 
         const error = validateStroke(stroke);

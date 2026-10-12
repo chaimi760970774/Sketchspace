@@ -26,6 +26,7 @@ export const canvasModel = {
     strokeColor: "#000000",
     strokeWidth: 4,
     strokeType: "pencil",       // "pencil" / "pen"
+    strokeOpacity: 1,           // 0 (invisible) to 1 (solid), used for new strokes
     fillColor: "#f4a261",       // colour used by the Fill button in the shape panel
 
     // Unsplash photo search
@@ -63,6 +64,7 @@ export const canvasModel = {
     setStrokeColor(color){ this.strokeColor = color; },
     setStrokeWidth(width){ this.strokeWidth = width; },
     setStrokeType(type){ this.strokeType = type; },
+    setStrokeOpacity(opacity){ this.strokeOpacity = opacity; },
     setFillColor(color){ this.fillColor = color; },
 
     // Unsplash photo search

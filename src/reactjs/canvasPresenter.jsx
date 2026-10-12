@@ -86,8 +86,10 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                     : <StrokePanelView strokeType={props.model.strokeType}
                                        strokeWidth={props.model.strokeWidth}
                                        strokeColor={props.model.strokeColor}
+                                       strokeOpacity={props.model.strokeOpacity}
                                        onStrokeTypeChange={handlerStrokeTypeChangeACB}
                                        onStrokeWidthChange={handlerStrokeWidthChangeACB}
+                                       onStrokeOpacityChange={handlerStrokeOpacityChangeACB}
                                        onStrokeColorChange={handlerStrokeColorChangeACB}/>}
             </CanvasView>
 
@@ -119,7 +121,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                                     brush={props.model.strokeType}
                                     strokeWidth={props.model.strokeWidth}
                                     strokeColor={props.model.strokeColor}
-                                    strokeOpacity={props.model.getStrokeOpacity()}
+                                    strokeOpacity={props.model.strokeOpacity}
                                     onDropItem={handlerDropItemACB}
                                     onSelect={handlerSelectElementACB}
                                     onDeselect={handlerDeselectACB}
@@ -181,6 +183,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerStrokeTypeChangeACB(type){ props.model.setStrokeType(type); }
         function handlerStrokeWidthChangeACB(width){ props.model.setStrokeWidth(Number(width)); }
         function handlerStrokeColorChangeACB(color){ props.model.setStrokeColor(color); }
+        function handlerStrokeOpacityChangeACB(opacity){ props.model.setStrokeOpacity(opacity); }
     }
 );
 

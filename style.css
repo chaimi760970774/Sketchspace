@@ -298,6 +298,9 @@ button { font: inherit; cursor: pointer; }
     font-size: 16px;
 }
 .stroke-type.selected { background: #d9d9d9; }
+.slider-row { display: flex; align-items: center; gap: 12px; }
+.slider-row input { flex: 1; }
+.slider-value { width: 44px; text-align: right; font-size: 14px; color: #555; }
 .color-picker { width: 160px; height: 160px; border: none; background: none; align-self: center; }
 
 /* ========== Photo search popup ========== */

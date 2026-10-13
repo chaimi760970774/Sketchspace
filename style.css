@@ -451,3 +451,22 @@ button { font: inherit; cursor: pointer; }
 .toast-error { background: #c0392b; }
 .toast-info { background: #444; }
 .toast-close { background: none; border: none; color: white; font-size: 20px; padding: 0 4px; }
+
+/* ========== Live status in the canvas topbar ========== */
+.collaborators { gap: 8px; }
+.live-dot { width: 12px; height: 12px; border-radius: 50%; background: #aaa; }
+.live-dot.live-live { background: #2e9e4f; }
+.live-dot.live-connecting { background: #e0a526; }
+.collaborators .collaborator-count { margin-left: 0; }
+.live-label { font-size: 14px; color: #666; }
+
+/* ========== Join a canvas by id (Gallery) ========== */
+.join-row { display: flex; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+.join-row .search-input { margin: 0; max-width: 320px; }
+.join-error { color: #a93226; font-size: 14px; }
+
+/* ========== Share popup ========== */
+.share-modal { width: 520px; }
+.share-id-row { display: flex; gap: 12px; align-items: center; }
+.share-id-row .search-input { font-family: monospace; font-size: 16px; }
+.share-private-row { display: flex; align-items: center; gap: 12px; margin-top: 20px; }

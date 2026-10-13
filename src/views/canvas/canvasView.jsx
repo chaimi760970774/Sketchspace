@@ -32,9 +32,10 @@ export function CanvasView(props){
 
             <div className="canvas-main">
                 <div className="canvas-topbar">
-                    <div className="collaborators">
-                        {props.collaborators.map(collaboratorCB)}
-                        <span className="collaborator-count">{props.collaborators.length}</span>
+                    <div className="collaborators" role="status" title="People in this canvas right now">
+                        <span className={"live-dot live-" + props.liveStatus}></span>
+                        {props.liveStatus === "live" && <span className="collaborator-count">{props.peerCount}</span>}
+                        <span className="live-label">{props.liveLabel}</span>
                     </div>
 
                     <div className="canvas-title-group">
@@ -64,9 +65,9 @@ export function CanvasView(props){
                         </div>
                         <button className="small-button" onClick={exportACB}>Export</button>
                         <div className="coming-soon-group">
-                            <button className="small-button" aria-pressed={props.isShared}
-                                    disabled={props.busy} onClick={props.onShareToggle}>
-                                {props.isShared ? "Unshare" : "Share"}
+                            <button className="small-button" disabled={props.busy} onClick={props.onShare}
+                                    title="Share this canvas with others">
+                                Share
                             </button>
                             <span className="coming-soon">{props.isShared ? "Shared in Gallery" : "Private"}</span>
                         </div>
@@ -152,10 +153,6 @@ export function CanvasView(props){
     }
     function clickShapeToolACB(){ props.onToolChange("shape"); }
     function clickStrokeToolACB(){ props.onToolChange("stroke"); }
-
-    function collaboratorCB(person){
-        return <div key={person.id} className="collaborator-avatar" title={person.name}></div>;
-    }
 
     function creditCB(credit, index){
         return (

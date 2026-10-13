@@ -16,9 +16,13 @@ const Gallery = observer(// observer needed for the presenter to update (its vie
                             loading={props.model.isLoadingCanvases()}
                             error={props.model.getCanvasesError()}
                             creating={props.model.creatingCanvas}
+                            joinText={props.model.joinCanvasIdDraft}
+                            joinError={props.model.joinCanvasIdError}
 
                             onSearchChange={handlerSearchChangeACB}
                             onRetry={handlerRetryACB}
+                            onJoinTextChange={handlerJoinTextChangeACB}
+                            onJoin={handlerJoinACB}
                             onNewCanvas={handlerNewCanvasACB}
                             onCardClick={handlerCardClickACB}/>;
 
@@ -30,6 +34,12 @@ const Gallery = observer(// observer needed for the presenter to update (its vie
         // the canvas is created on the server first, then opened
         function handlerNewCanvasACB(){ props.model.createNewCanvas().then(openCanvasACB); }
         function openCanvasACB(canvasId){ if (canvasId) navigate(`/canvas/${canvasId}`); }
+
+        function handlerJoinTextChangeACB(text){ props.model.setJoinCanvasIdDraft(text); }
+        function handlerJoinACB(){
+            const canvasId = props.model.submitJoinCanvasId();
+            if (canvasId) navigate(`/canvas/${canvasId}`);
+        }
 
         function handlerCardClickACB(canvas){ navigate(`/canvas/${canvas._id}`); }
     }

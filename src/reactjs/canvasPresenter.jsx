@@ -4,6 +4,7 @@ import { CanvasBoardView } from "/src/views/canvas/canvasBoardView.jsx";
 import { CanvasStatusView } from "/src/views/canvas/canvasStatusView.jsx";
 import { ShapePanelView } from "/src/views/canvas/shapePanelView.jsx";
 import { StrokePanelView } from "/src/views/canvas/strokePanelView.jsx";
+import { ShareDialogView } from "/src/views/canvas/shareDialogView.jsx";
 import { PhotoSearchView } from "/src/views/canvas/photoSearchView.jsx";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect } from "react";
@@ -28,6 +29,14 @@ const Canvas = observer(// observer needed for the presenter to update (its view
             return <CanvasStatusView loading message="Creating a new canvas..."/>;
         }
 
+        // the owner made the canvas private or deleted it while we were in it
+        if (props.model.canvasRemoved)
+            return <CanvasStatusView title={props.model.canvasRemoved === "deleted" ? "This canvas was deleted" : "This canvas is now private"}
+                                     message={props.model.canvasRemoved === "deleted"
+                                         ? "The owner deleted it."
+                                         : "The owner stopped sharing it, so you can no longer draw here."}
+                                     onHome={handlerHomeACB}/>;
+
         if (props.model.isCanvasNotFound())
             return <CanvasStatusView title="Canvas not found"
                                      message="It may have been deleted, or the link is wrong."
@@ -46,7 +55,9 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         return (
             <>
             <CanvasView currentTool={props.model.currentTool}
-                        collaborators={props.model.collaborators}
+                        liveStatus={props.model.liveStatus}
+                        peerCount={props.model.peerCount}
+                        liveLabel={props.model.getLiveLabel()}
                         credits={props.model.getPhotoCredits()}
                         canvasName={canvas.name}
                         isShared={canvas.isShared}
@@ -65,7 +76,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         onNameDraftChange={handlerNameDraftChangeACB}
                         onRenameSave={handlerRenameSaveACB}
                         onRenameCancel={handlerRenameCancelACB}
-                        onShareToggle={handlerShareToggleACB}
+                        onShare={handlerShareACB}
                         onExport={handlerExportACB}
                         onDelete={handlerDeleteACB}
 
@@ -92,6 +103,15 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                                        onStrokeOpacityChange={handlerStrokeOpacityChangeACB}
                                        onStrokeColorChange={handlerStrokeColorChangeACB}/>}
             </CanvasView>
+
+            {props.model.shareDialogOpen &&
+                <ShareDialogView canvasId={canvas._id}
+                                 copied={props.model.shareCopied}
+                                 isOwner={props.model.isCurrentCanvasOwner()}
+                                 busy={props.model.isCanvasBusy(canvas._id)}
+                                 onCopy={handlerCopyIdACB}
+                                 onMakePrivate={handlerMakePrivateACB}
+                                 onClose={handlerShareCloseACB}/>}
 
             {props.model.photoSearchOpen &&
                 <PhotoSearchView query={props.model.photoSearchQuery}
@@ -134,7 +154,10 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function openCanvasACB(){
             if (canvasId) props.model.loadCanvas(canvasId);
             else props.model.createNewCanvas().then(showNewCanvasACB);
+            return leaveCanvasACB;
         }
+        // leaving the page (or opening another canvas) leaves the live room
+        function leaveCanvasACB(){ props.model.leaveLiveCanvas(); }
         function showNewCanvasACB(newCanvasId){
             if (newCanvasId) navigate(`/canvas/${newCanvasId}`, { replace: true });
         }
@@ -149,7 +172,10 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerNameDraftChangeACB(name){ props.model.setCanvasNameDraft(name); }
         function handlerRenameSaveACB(){ props.model.saveRename(); }
         function handlerRenameCancelACB(){ props.model.cancelRename(); }
-        function handlerShareToggleACB(){ props.model.toggleCurrentCanvasShared(); }
+        function handlerShareACB(){ props.model.openShareDialog(); }
+        function handlerCopyIdACB(){ props.model.copyCanvasId(); }
+        function handlerMakePrivateACB(){ props.model.makeCurrentCanvasPrivate(); }
+        function handlerShareCloseACB(){ props.model.closeShareDialog(); }
         function handlerExportACB(succeeded){ props.model.showExportResult(succeeded); }
         function handlerDeleteACB(){ props.model.deleteSelection(); }
 

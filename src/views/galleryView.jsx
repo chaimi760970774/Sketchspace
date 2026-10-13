@@ -16,6 +16,13 @@ export function GalleryView(props){
                 <input className="search-input" placeholder="Search" aria-label="Search canvases"
                        value={props.searchText} onChange={searchChangeACB}/>
 
+                <div className="join-row">
+                    <input className="search-input" placeholder="Canvas id" aria-label="Canvas id to join"
+                           value={props.joinText} onChange={joinTextChangeACB} onKeyDown={joinKeyDownACB}/>
+                    <button className="small-button" onClick={joinClickACB}>Join canvas</button>
+                    {props.joinError && <span className="join-error" role="alert">{props.joinError}</span>}
+                </div>
+
                 <div className="toolbar-row">
                     <div className="toolbar-title">Shared canvases</div>
                     <button className="outline-button" disabled={props.creating} onClick={props.onNewCanvas}>
@@ -29,6 +36,9 @@ export function GalleryView(props){
     );
 
     function searchChangeACB(evt){ props.onSearchChange(evt.target.value); }
+    function joinTextChangeACB(evt){ props.onJoinTextChange(evt.target.value); }
+    function joinKeyDownACB(evt){ if (evt.key === "Enter") props.onJoin(); }
+    function joinClickACB(){ props.onJoin(); }
 
     function renderCanvases(){
         if (props.loading) return <div className="spinner" role="status" aria-label="Loading canvases"></div>;

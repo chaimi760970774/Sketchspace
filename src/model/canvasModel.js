@@ -9,16 +9,6 @@ const ELEMENT_LABELS = { photo: "Photo", shape: "Shape", cutout: "Cutout" };
 // elements, tools, cutting, Unsplash
 export const canvasModel = {
 
-    // ========== Fake data ==========
-
-    // Collaborators on the current canvas (replace with WebSocket data later)
-    collaborators: [
-        { id: "u1", name: "Yuewei" },
-        { id: "u2", name: "Friend" },
-    ],
-
-
-
     // ========== Page state ==========
 
     // Tools

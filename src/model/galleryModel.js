@@ -1,5 +1,5 @@
 import { resolvePromise, isPending } from "/src/utils/resolvePromise.js";
-import { listCanvases, getCanvas, createCanvas, updateCanvas, deleteCanvas } from "/src/api/canvasSource.js";
+import { listCanvases, getCanvas, createCanvas, updateCanvas, deleteCanvas, getOwnedCanvasIds, isCanvasOwner, forgetOwnerToken } from "/src/api/canvasSource.js";
 
 // canvas list (from the server), search, folders, creating / changing / deleting canvases
 export const galleryModel = {
@@ -31,6 +31,10 @@ export const galleryModel = {
     creatingCanvas: false,      // true while a new canvas is being created
     createCanvasError: "",      // why the last create failed, "" if it did not
 
+    // Joining a canvas by its id (the id copied with the Share button)
+    joinCanvasIdDraft: "",
+    joinCanvasIdError: "",
+
     // Search, Gallery and My Work each keep their own text so one page's filter does not leak into the other
     gallerySearchText: "",
     myWorkSearchText: "",
@@ -49,9 +53,24 @@ export const galleryModel = {
     // Loading the list
     loadCanvases(){
         const model = this;
-        const promise = listCanvases().then(storeCanvasesACB);
+        const promise = listCanvases().then(addOwnPrivateCanvasesACB).then(storeCanvasesACB);
         resolvePromise(promise, this.canvasesPromiseState);
         promise.catch(loadFailedACB);
+
+        // the server lists shared canvases only, so the user's private ones are read one by one with their token
+        function addOwnPrivateCanvasesACB(sharedCanvases){
+            function isNotListedCB(id){ return !sharedCanvases.some(function hasIdCB(canvas){ return canvas._id === id; }); }
+            function readOwnCB(id){
+                function ignoreMissingCB(error){
+                    // 404: the canvas was deleted elsewhere, so its token is useless
+                    if (error.status === 404) forgetOwnerToken(id);
+                    return null;
+                }
+                return getCanvas(id).catch(ignoreMissingCB);
+            }
+            function readAllACB(ownCanvases){ return sharedCanvases.concat(ownCanvases.filter(Boolean)); }
+            return Promise.all(getOwnedCanvasIds().filter(isNotListedCB).map(readOwnCB)).then(readAllACB);
+        }
 
         // an older request that finishes late must not overwrite a newer list
         function isLatest(){ return model.canvasesPromiseState.promise === promise; }
@@ -67,6 +86,24 @@ export const galleryModel = {
     getCanvasesError(){
         const error = this.canvasesPromiseState.error;
         return error ? error.message : "";
+    },
+
+    // Joining
+    setJoinCanvasIdDraft(text){
+        this.joinCanvasIdDraft = text;
+        this.joinCanvasIdError = "";
+    },
+    // resolves to the id to open, or null when the text is not a canvas id (the same rule as the server: 24 hex characters)
+    // whether the canvas exists and is shared is checked when it is opened
+    submitJoinCanvasId(){
+        const id = this.joinCanvasIdDraft.trim();
+        if (!/^[0-9a-f]{24}$/i.test(id)) {
+            this.joinCanvasIdError = id ? "That is not a valid canvas id" : "Paste a canvas id first";
+            return null;
+        }
+        this.joinCanvasIdDraft = "";
+        this.joinCanvasIdError = "";
+        return id;
     },
 
     // Search
@@ -87,11 +124,10 @@ export const galleryModel = {
 
     // My Work shows the current user's canvases, only the ones in the open folder unless "All" is open
     getMyCanvases(){
-        // TODO: the server has no owner field yet, so every canvas counts as the current user's.
-        //       Filter by owner === this.user.id once the server stores who created a canvas.
+        // the server has no accounts: a canvas is the user's when this browser holds its owner token
         const folderId = this.selectedFolderId;
         const canvasFolders = this.canvasFolders;
-        function isInFolderCB(canvas){ return !folderId || canvasFolders[canvas._id] === folderId; }
+        function isInFolderCB(canvas){ return isCanvasOwner(canvas._id) && (!folderId || canvasFolders[canvas._id] === folderId); }
         return this.filterCanvases(this.canvases.filter(isInFolderCB), this.myWorkSearchText);
     },
 

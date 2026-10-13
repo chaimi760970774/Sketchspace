@@ -1,7 +1,7 @@
 // All requests to the Sketchspace server (REST). Every function returns a promise;
 // if the server answers with an error, the promise rejects with an ApiError carrying its message.
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 // an error from the server; status is the HTTP status (0 = the server could not be reached)
 // hasServerMessage is true when the server explained the error itself ({ error: "..." });
@@ -46,6 +46,38 @@ function withJson(method, body){
     };
 }
 
+// ========== Owner tokens ==========
+// POST /api/canvas returns an ownerToken once (the server keeps only its hash), so it is saved in this
+// browser, per canvas. It goes in the X-Owner-Token header of every request for that canvas: the server
+// needs it for private canvases and for changing or deleting any canvas.
+
+const TOKENS_KEY = "sketchspace-owner-tokens";
+
+function readTokens(){
+    try {
+        return JSON.parse(localStorage.getItem(TOKENS_KEY)) || {};
+    } catch (error) {
+        return {};      // storage blocked or holding something unreadable: act as if there are no tokens
+    }
+}
+function writeTokens(tokens){
+    try { localStorage.setItem(TOKENS_KEY, JSON.stringify(tokens)); } catch (error) { /* storage blocked */ }
+}
+
+export function getOwnerToken(canvasId){ return readTokens()[canvasId] || null; }
+export function isCanvasOwner(canvasId){ return getOwnerToken(canvasId) !== null; }
+export function getOwnedCanvasIds(){ return Object.keys(readTokens()); }
+function saveOwnerToken(canvasId, token){
+    const tokens = readTokens();
+    tokens[canvasId] = token;
+    writeTokens(tokens);
+}
+export function forgetOwnerToken(canvasId){
+    const tokens = readTokens();
+    delete tokens[canvasId];
+    writeTokens(tokens);
+}
+
 function canvasPath(canvasId){ return "/api/canvas/" + encodeURIComponent(canvasId); }
 
 // same rule as the server (a MongoDB id: 24 hex characters); a badly formed id is rejected
@@ -53,13 +85,16 @@ function canvasPath(canvasId){ return "/api/canvas/" + encodeURIComponent(canvas
 function isValidCanvasId(canvasId){ return /^[0-9a-f]{24}$/i.test(canvasId); }
 function requestForCanvas(canvasId, pathAfterId, options){
     if (!isValidCanvasId(canvasId)) return Promise.reject(new ApiError("Invalid canvas id", 400, true));
-    return request(canvasPath(canvasId) + pathAfterId, options);
+    const token = getOwnerToken(canvasId);
+    const withToken = token ? { ...options, headers: { ...(options && options.headers), "X-Owner-Token": token } } : options;
+    return request(canvasPath(canvasId) + pathAfterId, withToken);
 }
 
 
 // ========== Canvases ==========
 // a canvas: { _id, name, isShared, createdAt, updatedAt, layers }
 
+// the shared canvases only: the server never lists private ones
 export function listCanvases(){
     return request("/api/canvas");
 }
@@ -68,19 +103,28 @@ export function getCanvas(canvasId){
     return requestForCanvas(canvasId, "");
 }
 
-// resolves to the new canvas id
+// resolves to the new canvas id; the owner token the server returns is saved for later requests
+// a canvas is private unless isShared is true
 export function createCanvas({ name, isShared }){
-    function getIdACB(data){ return data.canvasId; }
-    return request("/api/canvas", withJson("POST", { name: name, isShared: isShared })).then(getIdACB);
+    function saveTokenACB(data){
+        saveOwnerToken(data.canvasId, data.ownerToken);
+        return data.canvasId;
+    }
+    return request("/api/canvas", withJson("POST", { name: name, isShared: isShared })).then(saveTokenACB);
 }
 
-// changes: { name?, isShared? }, at least one
+// changes: { name?, isShared? }, at least one; owner only (the server answers 403 otherwise)
 export function updateCanvas(canvasId, changes){
     return requestForCanvas(canvasId, "", withJson("PUT", changes));
 }
 
+// owner only; the saved token is dropped once the canvas is gone
 export function deleteCanvas(canvasId){
-    return requestForCanvas(canvasId, "", { method: "DELETE" });
+    function forgetACB(data){
+        forgetOwnerToken(canvasId);
+        return data;
+    }
+    return requestForCanvas(canvasId, "", { method: "DELETE" }).then(forgetACB);
 }
 
 

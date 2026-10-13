@@ -9,13 +9,15 @@ const ACK_TIMEOUT_MS = 8000;
 let socket = null;
 
 // connects once (later calls do nothing)
-// handlers: { onConnect, onDisconnect, onStrokeAdded(stroke), onPeers(count), onUnshared, onDeleted }
+// handlers: { onConnect, onDisconnect, onStrokeAdded(stroke), onStrokeRemoved(strokeId), onCleared, onPeers(count), onUnshared, onDeleted }
 export function startSocket(handlers){
     if (socket) return;
     socket = io(API_URL);
     socket.on("connect", handlers.onConnect);
     socket.on("disconnect", handlers.onDisconnect);
     socket.on("stroke:added", handlers.onStrokeAdded);
+    socket.on("stroke:removed", handlers.onStrokeRemoved);
+    socket.on("canvas:cleared", handlers.onCleared);
     socket.on("canvas:peers", handlers.onPeers);
     socket.on("canvas:unshared", handlers.onUnshared);
     socket.on("canvas:deleted", handlers.onDeleted);
@@ -49,4 +51,17 @@ export function leaveCanvas(){
 export function sendStroke(stroke){
     function getIdACB(result){ return result.id; }
     return emitWithAck("stroke:add", stroke).then(getIdACB);
+}
+
+// removes the caller's most recent stroke in the canvas; resolves to its id
+// (strokes added over REST cannot be undone, and the owner counts as one author across connections)
+export function undoStroke(){
+    function getIdACB(result){ return result.id; }
+    return emitWithAck("stroke:undo").then(getIdACB);
+}
+
+// removes every stroke of the canvas (owner only); resolves to the number removed
+export function clearCanvasStrokes(){
+    function getRemovedACB(result){ return result.removed; }
+    return emitWithAck("canvas:clear").then(getRemovedACB);
 }

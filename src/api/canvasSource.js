@@ -150,6 +150,12 @@ export function addStroke(canvasId, stroke){
     return requestForCanvas(canvasId, "/strokes", withJson("POST", body)).then(getIdACB);
 }
 
+// removes every stroke of the canvas (owner only), resolves to the number removed
+export function clearStrokes(canvasId){
+    function getRemovedACB(data){ return data.removed; }
+    return requestForCanvas(canvasId, "/strokes", { method: "DELETE" }).then(getRemovedACB);
+}
+
 // DELETE /api/canvas/:canvasId/strokes/:strokeId
 // Note: the server does not have this route yet, so for now it answers 404 (see removeStroke in the model)
 export function deleteStroke(canvasId, strokeId){

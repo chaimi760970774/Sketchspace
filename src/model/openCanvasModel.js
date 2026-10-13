@@ -1,6 +1,6 @@
 import { resolvePromise, isPending } from "/src/utils/resolvePromise.js";
-import { getCanvas, listStrokes, addStroke, deleteStroke } from "/src/api/canvasSource.js";
-import { startSocket, isSocketConnected, joinCanvas, leaveCanvas, sendStroke } from "/src/api/socketSource.js";
+import { getCanvas, listStrokes, addStroke, deleteStroke, clearStrokes } from "/src/api/canvasSource.js";
+import { startSocket, isSocketConnected, joinCanvas, leaveCanvas, sendStroke, undoStroke, clearCanvasStrokes } from "/src/api/socketSource.js";
 import { getOwnerToken, isCanvasOwner } from "/src/api/canvasSource.js";
 import { validateStroke } from "/src/utils/validateStroke.js";
 
@@ -101,6 +101,8 @@ export const openCanvasModel = {
             onConnect: function connectedACB(){ model.rejoinLiveCanvas(); },
             onDisconnect: function disconnectedACB(){ model.liveStatus = "offline"; model.peerCount = 0; },
             onStrokeAdded: function strokeAddedACB(stroke){ model.addRemoteStroke(stroke); },
+            onStrokeRemoved: function strokeRemovedACB(strokeId){ model.removeStrokeLocally(strokeId); },
+            onCleared: function clearedACB(){ model.clearStrokesLocally(); model.showToast("The owner cleared the canvas", "info"); },
             onPeers: function peersACB(count){ model.peerCount = count; },
             onUnshared: function unsharedACB(){ model.removedFromCanvas("unshared"); },
             onDeleted: function deletedACB(){ model.removedFromCanvas("deleted"); },
@@ -143,6 +145,17 @@ export const openCanvasModel = {
         if (!this.currentCanvas || stroke.canvasId !== this.currentCanvas._id) return;
         if (this.findStroke(stroke.id)) return;         // e.g. our own REST stroke, which the server announces to everyone
         this.strokes = [...this.strokes, { ...stroke, status: "saved" }];
+    },
+
+    // a stroke somebody else undid
+    removeStrokeLocally(strokeId){
+        function isOtherCB(stroke){ return stroke.id !== strokeId; }
+        this.strokes = this.strokes.filter(isOtherCB);
+        if (this.selectedElementId === strokeId) this.selectedElementId = null;
+    },
+    clearStrokesLocally(){
+        this.strokes = [];
+        this.selectedElementId = null;
     },
 
     // the server removed us: the owner made the canvas private, or deleted it
@@ -303,6 +316,46 @@ export const openCanvasModel = {
             updateThisStroke({ status: "failed" });
             model.showToast("A stroke could not be saved (" + error.message + "), it is shown faded", "error");
         }
+    },
+
+    isLive(){ return this.liveStatus === "live" && this.joinedCanvasId === (this.currentCanvas && this.currentCanvas._id); },
+
+    // Undo: the server removes the caller's most recent stroke, then it goes from this screen too.
+    // It needs the live connection: strokes saved over REST cannot be undone.
+    undoLastStroke(){
+        const model = this;
+        if (!this.currentCanvas) return Promise.resolve();
+        if (!this.isLive()) {
+            this.showToast("Undo needs the live connection", "info");
+            return Promise.resolve();
+        }
+        if (this.getStrokeSaveStatus() === "saving") {
+            this.showToast("A line is still being saved, try again in a moment", "info");
+            return Promise.resolve();
+        }
+        return undoStroke().then(undoneACB).catch(failedACB);
+
+        function undoneACB(strokeId){ model.removeStrokeLocally(strokeId); }
+        function failedACB(error){ model.showToast("Could not undo: " + error.message, "error"); }
+    },
+
+    // Clear: removes every stroke (owner only); photos and shapes stay. Over the socket when live, otherwise REST.
+    clearAllStrokes(){
+        const model = this;
+        if (!this.currentCanvas) return Promise.resolve();
+        if (!this.isCurrentCanvasOwner()) {
+            this.showToast("Only the owner can clear the canvas", "error");
+            return Promise.resolve();
+        }
+        const canvasId = this.currentCanvas._id;
+        const clearing = this.isLive() ? clearCanvasStrokes() : clearStrokes(canvasId);
+        return clearing.then(clearedACB).catch(failedACB);
+
+        function clearedACB(removed){
+            if (model.currentCanvas && model.currentCanvas._id === canvasId) model.clearStrokesLocally();
+            model.showToast("Cleared " + removed + (removed === 1 ? " line" : " lines"), "success");
+        }
+        function failedACB(error){ model.showToast("Could not clear the canvas: " + error.message, "error"); }
     },
 
     findStroke(strokeId){

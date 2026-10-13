@@ -43,13 +43,14 @@ export function CanvasView(props){
                         {renderStrokeSaveStatus()}
                     </div>
 
-                    {/* not built yet, disabled with a visible note */}
                     <div className="coming-soon-group">
                         <div>
-                            <button className="icon-button" disabled aria-label="Undo">←</button>
+                            <button className="icon-button" disabled={!props.canUndo} aria-label="Undo"
+                                    title="Undo your last line" onClick={props.onUndo}>←</button>
+                            {/* the server has no redo */}
                             <button className="icon-button" disabled aria-label="Redo">→</button>
                         </div>
-                        <span className="coming-soon">Coming soon</span>
+                        <span className="coming-soon">{props.canUndo ? "Redo coming soon" : "Undo needs the live connection"}</span>
                     </div>
 
                     <div className="topbar-right">
@@ -63,6 +64,9 @@ export function CanvasView(props){
                             <button className="small-button" disabled>Save</button>
                             <span className="coming-soon">Photos and shapes can't be saved yet</span>
                         </div>
+                        {props.isOwner &&
+                            <button className="small-button danger-button" title="Remove every line from this canvas"
+                                    onClick={clearACB}>Clear lines</button>}
                         <button className="small-button" onClick={exportACB}>Export</button>
                         <div className="coming-soon-group">
                             <button className="small-button" disabled={props.busy} onClick={props.onShare}
@@ -98,6 +102,11 @@ export function CanvasView(props){
     }
     function isTyping(target){
         return Boolean(target) && (target.isContentEditable || TEXT_FIELD_TAGS.includes(target.tagName));
+    }
+
+    // removes every line for everybody, so ask first
+    function clearACB(){
+        if (window.confirm("Remove every line from this canvas for everyone? This cannot be undone.")) props.onClear();
     }
 
     // download the picture, then tell the presenter whether it worked

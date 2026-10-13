@@ -61,6 +61,8 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         credits={props.model.getPhotoCredits()}
                         canvasName={canvas.name}
                         isShared={canvas.isShared}
+                        isOwner={props.model.isCurrentCanvasOwner()}
+                        canUndo={props.model.isLive()}
                         busy={props.model.isCanvasBusy(canvas._id)}
                         renaming={props.model.renamingCanvas}
                         nameDraft={props.model.canvasNameDraft}
@@ -76,6 +78,8 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         onNameDraftChange={handlerNameDraftChangeACB}
                         onRenameSave={handlerRenameSaveACB}
                         onRenameCancel={handlerRenameCancelACB}
+                        onUndo={handlerUndoACB}
+                        onClear={handlerClearACB}
                         onShare={handlerShareACB}
                         onExport={handlerExportACB}
                         onDelete={handlerDeleteACB}
@@ -172,6 +176,8 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerNameDraftChangeACB(name){ props.model.setCanvasNameDraft(name); }
         function handlerRenameSaveACB(){ props.model.saveRename(); }
         function handlerRenameCancelACB(){ props.model.cancelRename(); }
+        function handlerUndoACB(){ props.model.undoLastStroke(); }
+        function handlerClearACB(){ props.model.clearAllStrokes(); }
         function handlerShareACB(){ props.model.openShareDialog(); }
         function handlerCopyIdACB(){ props.model.copyCanvasId(); }
         function handlerMakePrivateACB(){ props.model.makeCurrentCanvasPrivate(); }

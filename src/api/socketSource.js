@@ -58,12 +58,6 @@ export function sendStroke(stroke){
     return emitWithAck("stroke:add", stroke).then(getIdACB);
 }
 
-// removes your most recent stroke; resolves to its id (strokes added over REST cannot be undone)
-export function undoStroke(){
-    function getIdACB(result){ return result.id; }
-    return emitWithAck("stroke:undo").then(getIdACB);
-}
-
 // deletes one stroke
 export function deleteStrokeLive(strokeId){
     return emitWithAck("stroke:delete", strokeId);

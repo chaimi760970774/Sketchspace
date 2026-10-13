@@ -11,6 +11,9 @@ import { MAX_STROKE_POINTS } from "/src/utils/validateStroke.js";
 // while drawing, a new point is only kept if the pointer moved at least this far (keeps strokes small)
 const MIN_POINT_DISTANCE = 2;
 
+// while erasing, the path of a move is checked every this many pixels, so nothing is skipped
+const ERASE_STEP = 5;
+
 export function CanvasBoardView(props){
     // Konva needs refs to reach the canvas; these are UI-only, all app data stays in the model
     // stageRef comes from CanvasView, which uses it to export the picture
@@ -20,12 +23,20 @@ export function CanvasBoardView(props){
     // Stroke tool: the points of the stroke being drawn right now, null when not drawing.
     // Kept in the view because it changes on every mouse move; the finished stroke goes to the model.
     const [draftPoints, setDraftPoints] = useState(null);
-    const isStrokeTool = props.currentTool === "stroke";
+    // the eraser is switched on in the topbar and works on top of whichever tool the left panel shows
+    const isEraserTool = props.eraserOn;
+    const isStrokeTool = props.currentTool === "stroke" && !isEraserTool;
+    // with the stroke tool or the eraser, photos, shapes and lines ignore the mouse
+    const isPassive = isStrokeTool || isEraserTool;
+
+    // Eraser tool: whether the button is down, and where the last erase check was, so a fast move does not skip over things
+    const erasing = useRef(false);
+    const lastErasePoint = useRef(null);
 
     // attach the resize handles to the selected element (only with the shape tool)
-    useEffect(attachTransformerACB, [props.selectedId, props.elements, isStrokeTool]);
+    useEffect(attachTransformerACB, [props.selectedId, props.elements, isPassive]);
 
-    const stageClass = isStrokeTool ? "konva-stage drawing" : "konva-stage";
+    const stageClass = isStrokeTool ? "konva-stage drawing" : isEraserTool ? "konva-stage erasing" : "konva-stage";
 
     return (
         <div className="canvas-area" onDragOver={dragOverACB} onDrop={dropACB}>
@@ -47,10 +58,11 @@ export function CanvasBoardView(props){
                 </Layer>
 
                 {/* strokes are drawn above photos and shapes, oldest first; clickable only with the shape tool */}
-                <Layer listening={!isStrokeTool}>
+                <Layer listening={!isPassive}>
                     {props.strokes.map(strokeCB)}
                     {draftPoints && <StrokeNode stroke={makeDraftStroke()}/>}
                 </Layer>
+
             </Stage>
         </div>
     );
@@ -58,7 +70,7 @@ export function CanvasBoardView(props){
     // only photos, shapes and cutouts get resize handles; a selected stroke is just highlighted
     function attachTransformerACB(){
         function isSelectedCB(element){ return element.id === props.selectedId; }
-        const elementSelected = !isStrokeTool && props.elements.some(isSelectedCB);
+        const elementSelected = !isPassive && props.elements.some(isSelectedCB);
         const node = elementSelected ? stageRef.current.findOne("#" + props.selectedId) : null;
         transformerRef.current.nodes(node ? [node] : []);
     }
@@ -80,8 +92,15 @@ export function CanvasBoardView(props){
         return { x: position.x, y: position.y };
     }
 
-    // Shape tool: clicking on empty canvas clears the selection. Stroke tool: start a stroke.
+    // Shape tool: clicking on empty canvas clears the selection. Stroke tool: start a stroke. Eraser: start erasing.
     function pointerDownACB(evt){
+        if (isEraserTool) {
+            const point = getPointer();
+            erasing.current = true;
+            lastErasePoint.current = point;
+            props.onErase(point);
+            return;
+        }
         if (!isStrokeTool) {
             if (evt.target === evt.target.getStage()) props.onDeselect();
             return;
@@ -89,7 +108,22 @@ export function CanvasBoardView(props){
         setDraftPoints([getPointer()]);
     }
 
+    // Erasing: every point on the way from the last position is checked, so a fast move deletes what it crosses
+    function eraseMoveTo(point){
+        const last = lastErasePoint.current;
+        const distance = Math.hypot(point.x - last.x, point.y - last.y);
+        const steps = Math.ceil(distance / ERASE_STEP);
+        for (let step = 1; step <= steps; step++) {
+            props.onErase({ x: last.x + (point.x - last.x) * step / steps, y: last.y + (point.y - last.y) * step / steps });
+        }
+        lastErasePoint.current = point;
+    }
+
     function pointerMoveACB(){
+        if (isEraserTool) {
+            if (erasing.current) eraseMoveTo(getPointer());
+            return;
+        }
         if (!isStrokeTool || !draftPoints) return;
         const point = getPointer();
 
@@ -105,6 +139,10 @@ export function CanvasBoardView(props){
 
     // releasing the mouse (or leaving the canvas) finishes the stroke
     function pointerUpACB(){
+        if (erasing.current) {
+            erasing.current = false;
+            props.onEraseEnd();
+        }
         if (!draftPoints) return;
         props.onStrokeEnd(draftPoints);
         setDraftPoints(null);
@@ -125,7 +163,7 @@ export function CanvasBoardView(props){
     function strokeCB(stroke){
         function selectACB(){ props.onSelect(stroke.id); }
         return <StrokeNode key={stroke.id} stroke={stroke}
-                           interactive={!isStrokeTool}
+                           interactive={!isPassive}
                            selected={stroke.id === props.selectedId}
                            onSelect={selectACB}/>;
     }
@@ -154,10 +192,10 @@ export function CanvasBoardView(props){
             props.onElementChange(element.id, changes);
         }
 
-        // shared by every element type; with the stroke tool, elements ignore the mouse
+        // shared by every element type; with the stroke or eraser tool, elements ignore the mouse
         // so drawing on top of them does not select or move them
         const handlers = {
-            interactive: !isStrokeTool,
+            interactive: !isPassive,
             onSelect: selectACB,
             onDragEnd: dragEndACB,
             onTransformEnd: transformEndACB,

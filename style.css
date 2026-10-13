@@ -252,6 +252,11 @@ button { font: inherit; cursor: pointer; }
 }
 .konva-stage { margin: auto; background: white; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
 .konva-stage.drawing { cursor: crosshair; }
+/* a half transparent grey circle as big as a click reaches (20px), centred on the pointer */
+.konva-stage.erasing {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='10' cy='10' r='10' fill='%23808080' fill-opacity='0.5'/%3E%3C/svg%3E") 10 10, cell;
+}
+.small-button[aria-pressed="true"] { background: #aaa; }
 
 /* canvas name and stroke save status in the topbar */
 .canvas-title-group { display: flex; flex-direction: column; gap: 2px; min-width: 0; }

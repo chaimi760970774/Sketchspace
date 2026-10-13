@@ -1,8 +1,6 @@
 import { Line } from "react-konva";
 import { getBrushProps } from "/src/utils/brushStyles.js";
-
-// how far from the line a click still hits it; the drawn line itself is often only a few pixels wide
-const HIT_WIDTH = 20;
+import { STROKE_HIT_WIDTH } from "/src/utils/geometry.js";
 
 // one freehand stroke; the brush decides the line style (see brushStyles.js) and the stroke's own
 // opacity (chosen with the slider) is applied on top, for every brush
@@ -22,7 +20,7 @@ export function StrokeNode(props){
                  points={path.flatMap(toNumbersCB)}
                  {...getBrushProps(stroke)}
                  opacity={failed ? stroke.opacity * 0.25 : stroke.opacity}
-                 hitStrokeWidth={Math.max(HIT_WIDTH, stroke.size)}
+                 hitStrokeWidth={Math.max(STROKE_HIT_WIDTH, stroke.size)}
                  listening={Boolean(props.interactive)}
                  shadowEnabled={Boolean(props.selected)}
                  shadowColor="#2196f3"

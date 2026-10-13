@@ -2,7 +2,6 @@ import "/style.css"
 import { useRef, useEffect } from "react";
 import { downloadStageImage } from "/src/utils/exportImage.js";
 import { LogoView } from "/src/views/logoView.jsx";
-import { ButtonView } from "/src/views/buttonView.jsx";
 
 // typing in these must never delete what is selected on the canvas
 const TEXT_FIELD_TAGS = ["INPUT", "TEXTAREA", "SELECT"];
@@ -25,8 +24,8 @@ export function CanvasView(props){
                 <button className="sidebar-item sidebar-bottom" onClick={props.onProfileClick}>Profile</button>
             </div>
 
-            {/* left tool panel, the presenter decides which panel to show */}
-            <div className="tool-panel">
+            {/* left tool panel, the presenter decides which panel to show; using it switches the eraser off */}
+            <div className="tool-panel" onMouseDown={props.onToolPanelPress}>
                 {props.children}
             </div>
 
@@ -43,25 +42,15 @@ export function CanvasView(props){
                         {renderSaveStatus()}
                     </div>
 
-                    <div className="coming-soon-group">
-                        <div>
-                            <button className="icon-button" disabled={!props.canUndo} aria-label="Undo"
-                                    title="Undo your last line" onClick={props.onUndo}>←</button>
-                            {/* the server has no redo */}
-                            <button className="icon-button" disabled aria-label="Redo">→</button>
-                        </div>
-                        <span className="coming-soon">{props.canUndo ? "Redo coming soon" : "Undo needs the live connection"}</span>
-                    </div>
+                    <button className="small-button" aria-pressed={props.eraserOn}
+                            title="Eraser: drag over lines, photos and shapes to delete them" onClick={props.onEraserToggle}>
+                        Eraser
+                    </button>
 
                     <div className="topbar-right">
-                        {/* the same as pressing Delete, for users who do not know the shortcut */}
-                        {props.canDelete &&
-                            <ButtonView danger title="Delete the selected item (Delete / Backspace)" onClick={props.onDelete}>
-                                Delete {props.selectionLabel.toLowerCase()}
-                            </ButtonView>}
                         {props.isOwner &&
-                            <button className="small-button danger-button" title="Remove every line from this canvas"
-                                    onClick={clearACB}>Clear lines</button>}
+                            <button className="small-button danger-button" title="Remove everything from this canvas"
+                                    onClick={clearACB}>Clear canvas</button>}
                         <button className="small-button" onClick={exportACB}>Export</button>
                         <div className="coming-soon-group">
                             <button className="small-button" disabled={props.busy} onClick={props.onShare}
@@ -99,9 +88,9 @@ export function CanvasView(props){
         return Boolean(target) && (target.isContentEditable || TEXT_FIELD_TAGS.includes(target.tagName));
     }
 
-    // removes every line for everybody, so ask first
+    // removes everything for everybody, so ask first
     function clearACB(){
-        if (window.confirm("Remove every line from this canvas for everyone? This cannot be undone.")) props.onClear();
+        if (window.confirm("Remove every line, photo and shape from this canvas for everyone? This cannot be undone.")) props.onClear();
     }
 
     // download the picture, then tell the presenter whether it worked

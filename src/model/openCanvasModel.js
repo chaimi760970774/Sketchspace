@@ -1,6 +1,6 @@
 import { resolvePromise, isPending } from "/src/utils/resolvePromise.js";
 import { getCanvas, listStrokes, listElements, addStroke, deleteStroke, clearStrokes } from "/src/api/canvasSource.js";
-import { startSocket, isSocketConnected, joinCanvas, leaveCanvas, sendStroke, deleteStrokeLive, undoStroke, clearCanvasStrokes } from "/src/api/socketSource.js";
+import { startSocket, isSocketConnected, joinCanvas, leaveCanvas, sendStroke, deleteStrokeLive, clearCanvasStrokes } from "/src/api/socketSource.js";
 import { getOwnerToken, isCanvasOwner } from "/src/api/canvasSource.js";
 import { toLocalElement } from "/src/utils/elementFields.js";
 import { validateStroke } from "/src/utils/validateStroke.js";
@@ -324,27 +324,10 @@ export const openCanvasModel = {
 
     isLive(){ return this.liveStatus === "live" && this.joinedCanvasId === (this.currentCanvas && this.currentCanvas._id); },
 
-    // Undo: the server removes the caller's most recent stroke, then it goes from this screen too.
-    // It needs the live connection: strokes saved over REST cannot be undone.
-    undoLastStroke(){
-        const model = this;
-        if (!this.currentCanvas) return Promise.resolve();
-        if (!this.isLive()) {
-            this.showToast("Undo needs the live connection", "info");
-            return Promise.resolve();
-        }
-        if (this.getSaveStatus() === "saving") {
-            this.showToast("A line is still being saved, try again in a moment", "info");
-            return Promise.resolve();
-        }
-        return undoStroke().then(undoneACB).catch(failedACB);
-
-        function undoneACB(strokeId){ model.removeStrokeLocally(strokeId); }
-        function failedACB(error){ model.showToast("Could not undo: " + error.message, "error"); }
-    },
-
-    // Clear: removes every stroke (owner only); photos and shapes stay. Over the socket when live, otherwise REST.
-    clearAllStrokes(){
+    // Clear: removes every stroke and every element (owner only).
+    // The server clears strokes in one request but has no bulk delete for elements, so each saved element is deleted
+    // on its own; the people in the canvas get an "element:deleted" for each. Elements still saving are kept.
+    clearCanvas(){
         const model = this;
         if (!this.currentCanvas) return Promise.resolve();
         if (!this.isCurrentCanvasOwner()) {
@@ -352,12 +335,20 @@ export const openCanvasModel = {
             return Promise.resolve();
         }
         const canvasId = this.currentCanvas._id;
+        function isSavedCB(element){ return element.status !== "saving"; }
+        const savedElements = this.elements.filter(isSavedCB);
+        const stillSaving = this.elements.length - savedElements.length;
         const clearing = this.isLive() ? clearCanvasStrokes() : clearStrokes(canvasId);
         return clearing.then(clearedACB).catch(failedACB);
 
-        function clearedACB(removed){
-            if (model.currentCanvas && model.currentCanvas._id === canvasId) model.clearStrokesLocally();
-            model.showToast("Cleared " + removed + (removed === 1 ? " line" : " lines"), "success");
+        function clearedACB(removedStrokes){
+            if (!model.isCanvasOpenNow(canvasId)) return;
+            model.clearStrokesLocally();
+            function removeElementCB(element){ model.removeElement(element.id, true); }
+            savedElements.forEach(removeElementCB);
+            const total = removedStrokes + savedElements.length;
+            model.showToast("Cleared " + total + (total === 1 ? " item" : " items")
+                + (stillSaving ? ", " + stillSaving + " still saving, clear again" : ""), "success");
         }
         function failedACB(error){ model.showToast("Could not clear the canvas: " + error.message, "error"); }
     },
@@ -369,13 +360,14 @@ export const openCanvasModel = {
 
     // Removed from the canvas right away, then deleted on the server.
     // If the server refuses, the stroke is put back where it was.
-    removeStroke(strokeId){
+    // quiet: no "deleted" or "still saving" messages (used by the eraser)
+    removeStroke(strokeId, quiet){
         const model = this;
         const stroke = this.findStroke(strokeId);
         if (!stroke) return;
 
         if (stroke.status === "saving") {
-            this.showToast("This line is still being saved, try again in a moment", "info");
+            if (!quiet) this.showToast("This line is still being saved, try again in a moment", "info");
             return;
         }
 
@@ -390,7 +382,7 @@ export const openCanvasModel = {
 
         // a stroke that failed to save never reached the server, so there is nothing to delete there
         if (stroke.status === "failed") {
-            this.showToast("Line deleted", "success");
+            if (!quiet) this.showToast("Line deleted", "success");
             return;
         }
 
@@ -398,7 +390,7 @@ export const openCanvasModel = {
         const deleting = this.isLive() ? deleteStrokeLive(strokeId) : deleteStroke(canvasId, strokeId);
         deleting.then(deletedACB).catch(failedACB);
 
-        function deletedACB(){ model.showToast("Line deleted", "success"); }
+        function deletedACB(){ if (!quiet) model.showToast("Line deleted", "success"); }
         function failedACB(error){
             // only put it back if that canvas is still open
             if (model.currentCanvas && model.currentCanvas._id === canvasId) putBack();

@@ -62,14 +62,12 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         canvasName={canvas.name}
                         isShared={canvas.isShared}
                         isOwner={props.model.isCurrentCanvasOwner()}
-                        canUndo={props.model.isLive()}
                         busy={props.model.isCanvasBusy(canvas._id)}
                         renaming={props.model.renamingCanvas}
                         nameDraft={props.model.canvasNameDraft}
                         nameError={props.model.canvasNameError}
                         saveStatus={props.model.getSaveStatus()}
                         canDelete={props.model.canDeleteSelection()}
-                        selectionLabel={props.model.getSelectionLabel()}
 
                         onHomeClick={handlerHomeACB}
                         onProfileClick={() => navigate("/profile")}
@@ -78,7 +76,9 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         onNameDraftChange={handlerNameDraftChangeACB}
                         onRenameSave={handlerRenameSaveACB}
                         onRenameCancel={handlerRenameCancelACB}
-                        onUndo={handlerUndoACB}
+                        eraserOn={props.model.eraserOn}
+                        onEraserToggle={handlerEraserToggleACB}
+                        onToolPanelPress={handlerToolPanelPressACB}
                         onClear={handlerClearACB}
                         onShare={handlerShareACB}
                         onExport={handlerExportACB}
@@ -139,6 +139,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function renderBoardCB(stageRef){
             return <CanvasBoardView stageRef={stageRef}
                                     currentTool={props.model.currentTool}
+                                    eraserOn={props.model.eraserOn}
                                     elements={props.model.elements.slice()}   // slice() so the presenter re-renders when elements change
                                     strokes={props.model.strokes.slice()}
                                     selectedId={props.model.selectedElementId}
@@ -150,7 +151,9 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                                     onSelect={handlerSelectElementACB}
                                     onDeselect={handlerDeselectACB}
                                     onElementChange={handlerElementChangeACB}
-                                    onStrokeEnd={handlerStrokeEndACB}/>;
+                                    onStrokeEnd={handlerStrokeEndACB}
+                                    onErase={handlerEraseACB}
+                                    onEraseEnd={handlerEraseEndACB}/>;
         }
 
         // opening an existing canvas, or creating one for /canvas and replacing the URL with its id
@@ -176,8 +179,9 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerNameDraftChangeACB(name){ props.model.setCanvasNameDraft(name); }
         function handlerRenameSaveACB(){ props.model.saveRename(); }
         function handlerRenameCancelACB(){ props.model.cancelRename(); }
-        function handlerUndoACB(){ props.model.undoLastStroke(); }
-        function handlerClearACB(){ props.model.clearAllStrokes(); }
+        function handlerEraserToggleACB(){ props.model.toggleEraser(); }
+        function handlerToolPanelPressACB(){ props.model.turnEraserOff(); }
+        function handlerClearACB(){ props.model.clearCanvas(); }
         function handlerShareACB(){ props.model.openShareDialog(); }
         function handlerCopyIdACB(){ props.model.copyCanvasId(); }
         function handlerMakePrivateACB(){ props.model.makeCurrentCanvasPrivate(); }
@@ -195,6 +199,8 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerDeselectACB(){ props.model.selectElement(null); }
         function handlerElementChangeACB(id, changes){ props.model.updateElement(id, changes); }
         function handlerStrokeEndACB(path){ props.model.drawStroke(path); }
+        function handlerEraseACB(point){ props.model.eraseAt(point); }
+        function handlerEraseEndACB(){ props.model.endErase(); }
 
         // shape panel
         function handlerShapeClickACB(shape){ props.model.addShapeAtCentre(shape); }

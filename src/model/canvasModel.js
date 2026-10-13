@@ -1,6 +1,6 @@
 import { resolvePromise } from "/src/utils/resolvePromise.js";
 import { searchPhotos, trackDownload } from "/src/api/unsplashSource.js";
-import { toLocalPoint, getCentre, isPointInside } from "/src/utils/geometry.js";
+import { toLocalPoint, getCentre, isPointInside, isOnPath } from "/src/utils/geometry.js";
 import { addElement as addElementRequest, updateElement as updateElementRequest, deleteElement as deleteElementRequest } from "/src/api/canvasSource.js";
 import { sendElement, changeElementLive, deleteElementLive } from "/src/api/socketSource.js";
 import { toServerElement, toServerChanges, toLocalElement } from "/src/utils/elementFields.js";
@@ -16,6 +16,8 @@ export const canvasModel = {
 
     // Tools
     currentTool: "shape",       // left panel: "shape" / "stroke"
+    eraserOn: false,            // the topbar eraser button; while on, clicks and drags erase whatever the left panel shows
+    eraserTarget: null,         // what the current erasing drag deletes: "strokes" / "elements", null before the first hit
     strokeColor: "#000000",
     strokeWidth: 4,
     strokeType: "pencil",       // "pencil" / "pen"
@@ -54,9 +56,44 @@ export const canvasModel = {
     // Tools
     setCurrentTool(tool){
         this.currentTool = tool;
+        this.eraserOn = false;      // choosing a tool switches the eraser off
         // with the stroke tool, clicks draw instead of select, so nothing stays selected
         if (tool === "stroke") this.selectedElementId = null;
     },
+    turnEraserOff(){ this.eraserOn = false; },
+    toggleEraser(){
+        this.eraserOn = !this.eraserOn;
+        if (this.eraserOn) this.selectedElementId = null;      // clicks erase instead of select
+    },
+
+    // Erasing: deletes whole lines, photos, shapes and cutouts under the pointer, where a click would hit them.
+    // One drag deletes one kind only: lines if it first touches a line, otherwise elements,
+    // so rubbing out a line that crosses a photo leaves the photo.
+    // Things still being saved are skipped until the server has them.
+    eraseAt(point){
+        if (!this.currentCanvas) return;
+        function isSavedCB(item){ return item.status !== "saving"; }
+        function touchesStrokeCB(stroke){ return isSavedCB(stroke) && isOnPath(stroke.path, stroke.size, point); }
+        function touchesElementCB(element){ return isSavedCB(element) && isPointInside(element, point); }
+
+        const strokes = this.strokes.filter(touchesStrokeCB);
+        const element = this.elements.findLast(touchesElementCB);     // the top-most one
+        if (!this.eraserTarget) {
+            if (strokes.length > 0) this.eraserTarget = "strokes";
+            else if (element) this.eraserTarget = "elements";
+            else return;
+        }
+
+        if (this.eraserTarget === "strokes") {
+            const model = this;
+            function removeStrokeCB(stroke){ model.removeStroke(stroke.id, true); }
+            strokes.forEach(removeStrokeCB);
+        } else if (element) {
+            this.removeElement(element.id, true);
+        }
+    },
+    // the drag is over: the next one may delete the other kind
+    endErase(){ this.eraserTarget = null; },
     setStrokeColor(color){ this.strokeColor = color; },
     setStrokeWidth(width){ this.strokeWidth = width; },
     setStrokeType(type){ this.strokeType = type; },
@@ -245,7 +282,7 @@ export const canvasModel = {
         const element = this.findElement(id);
         if (!element) return;
         if (element.status === "saving") {
-            this.showToast("This " + ELEMENT_LABELS[element.type].toLowerCase() + " is still being saved, try again in a moment", "info");
+            if (!quiet) this.showToast("This " + ELEMENT_LABELS[element.type].toLowerCase() + " is still being saved, try again in a moment", "info");
             return;
         }
         function isTargetCB(other){ return other.id === id; }

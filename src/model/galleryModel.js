@@ -1,5 +1,5 @@
 import { resolvePromise, isPending } from "/src/utils/resolvePromise.js";
-import { listCanvases, getCanvas, createCanvas, updateCanvas, deleteCanvas, getOwnedCanvasIds, isCanvasOwner, forgetOwnerToken } from "/src/api/canvasSource.js";
+import { listCanvases, listMyCanvases, getCanvas, createCanvas, updateCanvas, deleteCanvas, getOwnedCanvasIds, isCanvasOwner, forgetOwnerToken } from "/src/api/canvasSource.js";
 
 // canvas list (from the server), search, folders, creating / changing / deleting canvases
 export const galleryModel = {
@@ -10,11 +10,13 @@ export const galleryModel = {
     // canvas: { _id, name, isShared, createdAt, updatedAt, layers }
     // isShared: only shared canvases are shown in the Gallery
     canvases: [],
+    // the ids of the canvases the logged-in account owns, from the server (a guest's are found through owner tokens)
+    myCanvasIds: [],
 
     // Folders created by users (replace with data from the REST API later)
     // A folder only belongs to its owner and is only shown in their My Work
     folders: [
-        { id: "f1", name: "Travel", owner: "u1" },
+        { id: "f1", name: "Travel", owner: "guest" },
     ],
 
     // Which folder each canvas is in: { [canvasId]: folderId }; a canvas that is not listed is in no folder
@@ -53,11 +55,23 @@ export const galleryModel = {
     // Loading the list
     loadCanvases(){
         const model = this;
-        const promise = listCanvases().then(addOwnPrivateCanvasesACB).then(storeCanvasesACB);
+        const mine = this.isLoggedIn ? listMyCanvases() : Promise.resolve([]);
+        let accountCanvasIds = [];
+        const promise = Promise.all([listCanvases(), mine]).then(mergeACB).then(addOwnPrivateCanvasesACB).then(storeCanvasesACB);
         resolvePromise(promise, this.canvasesPromiseState);
         promise.catch(loadFailedACB);
 
-        // the server lists shared canvases only: read the user's private ones one by one with their token
+        // the shared canvases, plus the account's own (shared or private)
+        function mergeACB(results){
+            const shared = results[0];
+            const own = results[1];
+            accountCanvasIds = own.map(function toIdCB(canvas){ return canvas._id; });
+            function isNotSharedCB(canvas){ return !shared.some(function hasIdCB(other){ return other._id === canvas._id; }); }
+            return shared.concat(own.filter(isNotSharedCB));
+        }
+
+        // canvases made with an owner token that the account does not hold yet (a guest's, or not claimed yet):
+        // read the private ones one by one with their token
         function addOwnPrivateCanvasesACB(sharedCanvases){
             function isNotListedCB(id){ return !sharedCanvases.some(function hasIdCB(canvas){ return canvas._id === id; }); }
             function readOwnCB(id){
@@ -75,7 +89,10 @@ export const galleryModel = {
         // an older request that finishes late must not overwrite a newer list
         function isLatest(){ return model.canvasesPromiseState.promise === promise; }
         function storeCanvasesACB(canvases){
-            if (isLatest()) model.canvases = canvases;
+            if (isLatest()) {
+                model.canvases = canvases;
+                model.myCanvasIds = accountCanvasIds;
+            }
             return canvases;
         }
         function loadFailedACB(error){
@@ -124,12 +141,15 @@ export const galleryModel = {
 
     // My Work shows the current user's canvases, only the ones in the open folder unless "All" is open
     getMyCanvases(){
-        // no accounts: a canvas is the user's when this browser holds its owner token
+        const model = this;
         const folderId = this.selectedFolderId;
         const canvasFolders = this.canvasFolders;
-        function isInFolderCB(canvas){ return isCanvasOwner(canvas._id) && (!folderId || canvasFolders[canvas._id] === folderId); }
+        function isInFolderCB(canvas){ return model.isMine(canvas._id) && (!folderId || canvasFolders[canvas._id] === folderId); }
         return this.filterCanvases(this.canvases.filter(isInFolderCB), this.myWorkSearchText);
     },
+
+    // a canvas is the user's when the account owns it, or this browser holds its owner token
+    isMine(canvasId){ return this.myCanvasIds.includes(canvasId) || isCanvasOwner(canvasId); },
 
     isCanvasBusy(canvasId){ return this.busyCanvasIds.includes(canvasId); },
     setCanvasBusy(canvasId, busy){

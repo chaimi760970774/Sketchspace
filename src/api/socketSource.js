@@ -13,7 +13,7 @@ let socket = null;
 //           onStrokeAdded / onStrokeRemoved / onStrokeDeleted, onElementAdded / onElementUpdated / onElementDeleted
 export function startSocket(handlers){
     if (socket) return;
-    socket = io(API_URL);
+    socket = io(API_URL, { withCredentials: true });      // sends the login cookie
     socket.on("connect", handlers.onConnect);
     socket.on("disconnect", handlers.onDisconnect);
     socket.on("stroke:added", handlers.onStrokeAdded);
@@ -26,6 +26,12 @@ export function startSocket(handlers){
     socket.on("canvas:peers", handlers.onPeers);
     socket.on("canvas:unshared", handlers.onUnshared);
     socket.on("canvas:deleted", handlers.onDeleted);
+}
+
+// closes the connection, so the next canvas opens a new one with the current login cookie
+export function stopSocket(){
+    if (socket) socket.disconnect();
+    socket = null;
 }
 
 export function isSocketConnected(){ return Boolean(socket) && socket.connected; }

@@ -31,7 +31,7 @@ export const galleryModel = {
     creatingCanvas: false,      // true while a new canvas is being created
     createCanvasError: "",      // why the last create failed, "" if it did not
 
-    // Joining a canvas by its id (the id copied with the Share button)
+    // Joining a canvas by the id from the Share popup
     joinCanvasIdDraft: "",
     joinCanvasIdError: "",
 
@@ -57,12 +57,12 @@ export const galleryModel = {
         resolvePromise(promise, this.canvasesPromiseState);
         promise.catch(loadFailedACB);
 
-        // the server lists shared canvases only, so the user's private ones are read one by one with their token
+        // the server lists shared canvases only: read the user's private ones one by one with their token
         function addOwnPrivateCanvasesACB(sharedCanvases){
             function isNotListedCB(id){ return !sharedCanvases.some(function hasIdCB(canvas){ return canvas._id === id; }); }
             function readOwnCB(id){
                 function ignoreMissingCB(error){
-                    // 404: the canvas was deleted elsewhere, so its token is useless
+                    // 404: deleted elsewhere, so the token is useless
                     if (error.status === 404) forgetOwnerToken(id);
                     return null;
                 }
@@ -93,8 +93,8 @@ export const galleryModel = {
         this.joinCanvasIdDraft = text;
         this.joinCanvasIdError = "";
     },
-    // resolves to the id to open, or null when the text is not a canvas id (the same rule as the server: 24 hex characters)
-    // whether the canvas exists and is shared is checked when it is opened
+    // returns the id to open, or null if the text is not a canvas id (24 hex characters)
+    // whether the canvas exists and is shared is only known when it is opened
     submitJoinCanvasId(){
         const id = this.joinCanvasIdDraft.trim();
         if (!/^[0-9a-f]{24}$/i.test(id)) {
@@ -124,7 +124,7 @@ export const galleryModel = {
 
     // My Work shows the current user's canvases, only the ones in the open folder unless "All" is open
     getMyCanvases(){
-        // the server has no accounts: a canvas is the user's when this browser holds its owner token
+        // no accounts: a canvas is the user's when this browser holds its owner token
         const folderId = this.selectedFolderId;
         const canvasFolders = this.canvasFolders;
         function isInFolderCB(canvas){ return isCanvasOwner(canvas._id) && (!folderId || canvasFolders[canvas._id] === folderId); }

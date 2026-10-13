@@ -1,7 +1,8 @@
 import { resolvePromise, isPending } from "/src/utils/resolvePromise.js";
-import { getCanvas, listStrokes, addStroke, deleteStroke, clearStrokes } from "/src/api/canvasSource.js";
-import { startSocket, isSocketConnected, joinCanvas, leaveCanvas, sendStroke, undoStroke, clearCanvasStrokes } from "/src/api/socketSource.js";
+import { getCanvas, listStrokes, listElements, addStroke, deleteStroke, clearStrokes } from "/src/api/canvasSource.js";
+import { startSocket, isSocketConnected, joinCanvas, leaveCanvas, sendStroke, deleteStrokeLive, undoStroke, clearCanvasStrokes } from "/src/api/socketSource.js";
 import { getOwnerToken, isCanvasOwner } from "/src/api/canvasSource.js";
+import { toLocalElement } from "/src/utils/elementFields.js";
 import { validateStroke } from "/src/utils/validateStroke.js";
 
 // the server has the layers foreground / middleground / background; strokes go on the top one for now
@@ -45,9 +46,9 @@ export const openCanvasModel = {
     loadCanvas(canvasId){
         const model = this;
 
-        // photos and shapes are not saved on the server yet, so the ones on screen belong to the
-        // previously open canvas: start this one empty
+        // what is on screen belongs to the previous canvas: start empty
         this.elements = [];
+        this.pendingElementChanges = {};
         this.selectedElementId = null;
         this.strokes = [];
         this.currentCanvas = null;
@@ -56,8 +57,8 @@ export const openCanvasModel = {
         this.leaveLiveCanvas();
         this.cancelRename();
 
-        // canvas info and strokes are requested at the same time
-        const promise = Promise.all([getCanvas(canvasId), listStrokes(canvasId)]).then(storeACB);
+        // canvas info, strokes and elements are requested at the same time
+        const promise = Promise.all([getCanvas(canvasId), listStrokes(canvasId), listElements(canvasId)]).then(storeACB);
         resolvePromise(promise, this.canvasPromiseState);
         promise.catch(loadFailedACB);
 
@@ -82,6 +83,7 @@ export const openCanvasModel = {
             if (isLatest()) {
                 model.currentCanvas = results[0];
                 model.strokes = results[1].map(toSavedStrokeCB);
+                model.elements = results[2].map(toLocalElement);
                 model.joinLiveCanvas(canvasId);
             }
             return true;    // resolvePromise needs a truthy result, otherwise it still looks like loading
@@ -92,16 +94,20 @@ export const openCanvasModel = {
     },
 
     // ---------- Live drawing ----------
-    // The canvas is loaded over REST first; then the socket joins it to get the headcount and other people's strokes.
-    // If the live connection is not available, drawing still works over REST.
+    // The canvas loads over REST, then the socket joins it for the headcount and live changes.
+    // Without the live connection, drawing still works over REST.
     joinLiveCanvas(canvasId){
         const model = this;
-        // the socket is made once, so its handlers must not belong to one canvas: they read the model's current state
+        // the socket is made once, so the handlers read the model's current state
         startSocket({
             onConnect: function connectedACB(){ model.rejoinLiveCanvas(); },
             onDisconnect: function disconnectedACB(){ model.liveStatus = "offline"; model.peerCount = 0; },
             onStrokeAdded: function strokeAddedACB(stroke){ model.addRemoteStroke(stroke); },
             onStrokeRemoved: function strokeRemovedACB(strokeId){ model.removeStrokeLocally(strokeId); },
+            onStrokeDeleted: function strokeDeletedACB(strokeId){ model.removeStrokeLocally(strokeId); },
+            onElementAdded: function elementAddedACB(element){ model.addRemoteElement(element); },
+            onElementUpdated: function elementUpdatedACB(element){ model.updateRemoteElement(element); },
+            onElementDeleted: function elementDeletedACB(elementId){ model.removeElementLocally(elementId); },
             onCleared: function clearedACB(){ model.clearStrokesLocally(); model.showToast("The owner cleared the canvas", "info"); },
             onPeers: function peersACB(count){ model.peerCount = count; },
             onUnshared: function unsharedACB(){ model.removedFromCanvas("unshared"); },
@@ -111,7 +117,7 @@ export const openCanvasModel = {
         this.sendJoin(canvasId);
     },
 
-    // the join waits in the socket until the connection is up
+    // waits in the socket until it is connected
     sendJoin(canvasId){
         const model = this;
         this.liveStatus = "connecting";
@@ -121,11 +127,11 @@ export const openCanvasModel = {
         function joinedACB(result){
             if (!isStillOpen()) return;
             model.liveStatus = "live";
-            // the saved strokes as the server has them now (some may have arrived after the REST list),
-            // plus this user's own strokes that are still saving or failed
+            // the server's strokes and elements, plus our own that are not saved yet
             function toSavedStrokeCB(stroke){ return { ...stroke, status: "saved" }; }
             function isUnsavedCB(stroke){ return stroke.status !== "saved"; }
             model.strokes = [...result.strokes.map(toSavedStrokeCB), ...model.strokes.filter(isUnsavedCB)];
+            model.elements = [...result.elements.map(toLocalElement), ...model.elements.filter(isUnsavedCB)];
         }
         function joinFailedACB(error){
             if (!isStillOpen()) return;
@@ -134,8 +140,7 @@ export const openCanvasModel = {
         }
     },
 
-    // the connection came back: join again to get the strokes missed meanwhile
-    // (the first connection also ends up here, but the join already sent is waiting, so only a known canvas is joined again)
+    // after a reconnect: join again to get what was missed
     rejoinLiveCanvas(){
         if (this.joinedCanvasId && this.liveStatus === "offline") this.sendJoin(this.joinedCanvasId);
     },
@@ -143,7 +148,7 @@ export const openCanvasModel = {
     // a stroke another person drew
     addRemoteStroke(stroke){
         if (!this.currentCanvas || stroke.canvasId !== this.currentCanvas._id) return;
-        if (this.findStroke(stroke.id)) return;         // e.g. our own REST stroke, which the server announces to everyone
+        if (this.findStroke(stroke.id)) return;         // our own REST stroke, announced to everyone
         this.strokes = [...this.strokes, { ...stroke, status: "saved" }];
     },
 
@@ -158,7 +163,7 @@ export const openCanvasModel = {
         this.selectedElementId = null;
     },
 
-    // the server removed us: the owner made the canvas private, or deleted it
+    // the owner made the canvas private or deleted it
     removedFromCanvas(reason){
         this.canvasRemoved = reason;
         this.joinedCanvasId = null;
@@ -166,10 +171,11 @@ export const openCanvasModel = {
         this.liveStatus = "offline";
         this.currentCanvas = null;
         this.strokes = [];
+        this.elements = [];
         this.selectedElementId = null;
     },
 
-    // called when the canvas page closes or another canvas is opened
+    // the canvas page closed or another canvas opened
     leaveLiveCanvas(){
         if (this.joinedCanvasId) leaveCanvas();
         this.joinedCanvasId = null;
@@ -225,8 +231,7 @@ export const openCanvasModel = {
     },
 
     // Sharing
-    // the Share button: opens a popup with the canvas id, which other people type in on the Gallery page to join.
-    // A private canvas is shared first (owner only), so there is something to join.
+    // Share button: shares a private canvas (owner only), then opens the popup with the canvas id
     openShareDialog(){
         const model = this;
         const canvas = this.currentCanvas;
@@ -241,7 +246,7 @@ export const openCanvasModel = {
         }
         return this.saveCanvasChanges(canvas._id, { isShared: true }, "Canvas is now shared in the Gallery").then(afterSaveACB);
 
-        // saveCanvasChanges tells the user itself when it fails, so only open the popup if the canvas really is shared now
+        // saveCanvasChanges reports its own failure: only open the popup if the canvas is shared now
         function afterSaveACB(){
             const open = model.currentCanvas;
             if (open && open._id === canvas._id && open.isShared) model.shareDialogOpen = true;
@@ -265,12 +270,11 @@ export const openCanvasModel = {
         return this.setCanvasShared(this.currentCanvas._id, false);
     },
 
-    // only the owner (this browser holds the owner token) can make a canvas private again
+    // only the owner (holds the token) can change sharing
     isCurrentCanvasOwner(){ return Boolean(this.currentCanvas) && isCanvasOwner(this.currentCanvas._id); },
 
     // Strokes
-    // The one place a new stroke is added. When the live connection is joined it goes out with
-    // socket.io "stroke:add" (everyone else in the canvas gets it at once), otherwise over REST.
+    // The one place a stroke is added: over the socket when joined, otherwise REST.
     drawStroke(path){
         if (!this.currentCanvas) return;
         const model = this;
@@ -302,7 +306,7 @@ export const openCanvasModel = {
             model.strokes = model.strokes.map(updateCB);
         }
         function savedACB(strokeId){
-            // a stroke sent over REST can already have come back through "stroke:added": keep just one
+            // a REST stroke can come back through "stroke:added" first: keep one
             if (model.findStroke(strokeId)) {
                 function isTemporaryCB(other){ return other.id !== temporaryId; }
                 model.strokes = model.strokes.filter(isTemporaryCB);
@@ -329,7 +333,7 @@ export const openCanvasModel = {
             this.showToast("Undo needs the live connection", "info");
             return Promise.resolve();
         }
-        if (this.getStrokeSaveStatus() === "saving") {
+        if (this.getSaveStatus() === "saving") {
             this.showToast("A line is still being saved, try again in a moment", "info");
             return Promise.resolve();
         }
@@ -391,13 +395,14 @@ export const openCanvasModel = {
         }
 
         const canvasId = this.currentCanvas._id;
-        deleteStroke(canvasId, strokeId).then(deletedACB).catch(failedACB);
+        const deleting = this.isLive() ? deleteStrokeLive(strokeId) : deleteStroke(canvasId, strokeId);
+        deleting.then(deletedACB).catch(failedACB);
 
         function deletedACB(){ model.showToast("Line deleted", "success"); }
         function failedACB(error){
             // only put it back if that canvas is still open
             if (model.currentCanvas && model.currentCanvas._id === canvasId) putBack();
-            model.showToast(deleteErrorMessage(error), "error");
+            model.showToast("Could not delete the line (" + error.message + "), it was put back", "error");
         }
         // the strokes that were before it are still in front, in the same order: it goes right after them
         function putBack(){
@@ -405,24 +410,19 @@ export const openCanvasModel = {
             const position = model.strokes.filter(wasBeforeCB).length;
             model.strokes = [...model.strokes.slice(0, position), stroke, ...model.strokes.slice(position)];
         }
-        // a 404 without a message from the server means the route does not exist (yet);
-        // once the server has it, its own messages (e.g. "Stroke not found") are shown instead
-        function deleteErrorMessage(error){
-            if (error.status === 404 && !error.hasServerMessage)
-                return "Deleting lines is not supported by the server yet, the line was put back";
-            return "Could not delete the line (" + error.message + "), it was put back";
-        }
     },
 
-    // "saving", "failed", "saved", or "" when there are no strokes; shown next to the canvas name
-    getStrokeSaveStatus(){
+    // "saving", "failed", "saved", or "" when there is nothing on the canvas; shown next to the canvas name
+    // (failed strokes stay faded; failed elements are removed)
+    getSaveStatus(){
+        const items = [...this.strokes, ...this.elements];
         function hasStatus(status){
-            function isCB(stroke){ return stroke.status === status; }
+            function isCB(item){ return item.status === status; }
             return isCB;
         }
-        if (this.strokes.some(hasStatus("saving"))) return "saving";
-        if (this.strokes.some(hasStatus("failed"))) return "failed";
-        if (this.strokes.length > 0) return "saved";
+        if (items.some(hasStatus("saving"))) return "saving";
+        if (items.some(hasStatus("failed"))) return "failed";
+        if (items.length > 0) return "saved";
         return "";
     },
 };

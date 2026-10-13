@@ -1,15 +1,16 @@
 import { io } from "socket.io-client";
 import { API_URL } from "/src/api/canvasSource.js";
 
-// Live drawing over socket.io. A socket is in one canvas at a time; every request gets an
-// acknowledgement { ok, ... } or { ok: false, error }, and the promises here reject with an Error holding that message.
+// Live drawing over socket.io. A socket is in one canvas at a time.
+// Every request is acknowledged with { ok, ... } or { ok: false, error }; the promises reject with that error.
 
 const ACK_TIMEOUT_MS = 8000;
 
 let socket = null;
 
 // connects once (later calls do nothing)
-// handlers: { onConnect, onDisconnect, onStrokeAdded(stroke), onStrokeRemoved(strokeId), onCleared, onPeers(count), onUnshared, onDeleted }
+// handlers: onConnect, onDisconnect, onPeers(count), onUnshared, onDeleted, onCleared,
+//           onStrokeAdded / onStrokeRemoved / onStrokeDeleted, onElementAdded / onElementUpdated / onElementDeleted
 export function startSocket(handlers){
     if (socket) return;
     socket = io(API_URL);
@@ -17,6 +18,10 @@ export function startSocket(handlers){
     socket.on("disconnect", handlers.onDisconnect);
     socket.on("stroke:added", handlers.onStrokeAdded);
     socket.on("stroke:removed", handlers.onStrokeRemoved);
+    socket.on("stroke:deleted", handlers.onStrokeDeleted);
+    socket.on("element:added", handlers.onElementAdded);
+    socket.on("element:updated", handlers.onElementUpdated);
+    socket.on("element:deleted", handlers.onElementDeleted);
     socket.on("canvas:cleared", handlers.onCleared);
     socket.on("canvas:peers", handlers.onPeers);
     socket.on("canvas:unshared", handlers.onUnshared);
@@ -47,21 +52,40 @@ export function leaveCanvas(){
     if (socket) socket.emit("canvas:leave");
 }
 
-// resolves to the new stroke id; the sender does not get its own stroke back through "stroke:added"
+// resolves to the new stroke id
 export function sendStroke(stroke){
     function getIdACB(result){ return result.id; }
     return emitWithAck("stroke:add", stroke).then(getIdACB);
 }
 
-// removes the caller's most recent stroke in the canvas; resolves to its id
-// (strokes added over REST cannot be undone, and the owner counts as one author across connections)
+// removes your most recent stroke; resolves to its id (strokes added over REST cannot be undone)
 export function undoStroke(){
     function getIdACB(result){ return result.id; }
     return emitWithAck("stroke:undo").then(getIdACB);
+}
+
+// deletes one stroke
+export function deleteStrokeLive(strokeId){
+    return emitWithAck("stroke:delete", strokeId);
 }
 
 // removes every stroke of the canvas (owner only); resolves to the number removed
 export function clearCanvasStrokes(){
     function getRemovedACB(result){ return result.removed; }
     return emitWithAck("canvas:clear").then(getRemovedACB);
+}
+
+// resolves to the new element id
+export function sendElement(element){
+    function getIdACB(result){ return result.id; }
+    return emitWithAck("element:add", element).then(getIdACB);
+}
+
+// changes: the changed fields only
+export function changeElementLive(elementId, changes){
+    return emitWithAck("element:update", elementId, changes);
+}
+
+export function deleteElementLive(elementId){
+    return emitWithAck("element:delete", elementId);
 }

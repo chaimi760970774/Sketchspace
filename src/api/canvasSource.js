@@ -47,9 +47,8 @@ function withJson(method, body){
 }
 
 // ========== Owner tokens ==========
-// POST /api/canvas returns an ownerToken once (the server keeps only its hash), so it is saved in this
-// browser, per canvas. It goes in the X-Owner-Token header of every request for that canvas: the server
-// needs it for private canvases and for changing or deleting any canvas.
+// POST /api/canvas returns the ownerToken once, so it is kept per canvas in this browser
+// and sent as X-Owner-Token on every request for that canvas.
 
 const TOKENS_KEY = "sketchspace-owner-tokens";
 
@@ -57,7 +56,7 @@ function readTokens(){
     try {
         return JSON.parse(localStorage.getItem(TOKENS_KEY)) || {};
     } catch (error) {
-        return {};      // storage blocked or holding something unreadable: act as if there are no tokens
+        return {};      // storage blocked or unreadable: no tokens
     }
 }
 function writeTokens(tokens){
@@ -80,8 +79,7 @@ export function forgetOwnerToken(canvasId){
 
 function canvasPath(canvasId){ return "/api/canvas/" + encodeURIComponent(canvasId); }
 
-// same rule as the server (a MongoDB id: 24 hex characters); a badly formed id is rejected
-// here without a request, with the same error the server would send
+// a MongoDB id is 24 hex characters; a badly formed id is rejected here, with the server's error
 function isValidCanvasId(canvasId){ return /^[0-9a-f]{24}$/i.test(canvasId); }
 function requestForCanvas(canvasId, pathAfterId, options){
     if (!isValidCanvasId(canvasId)) return Promise.reject(new ApiError("Invalid canvas id", 400, true));
@@ -94,7 +92,7 @@ function requestForCanvas(canvasId, pathAfterId, options){
 // ========== Canvases ==========
 // a canvas: { _id, name, isShared, createdAt, updatedAt, layers }
 
-// the shared canvases only: the server never lists private ones
+// shared canvases only
 export function listCanvases(){
     return request("/api/canvas");
 }
@@ -157,7 +155,30 @@ export function clearStrokes(canvasId){
 }
 
 // DELETE /api/canvas/:canvasId/strokes/:strokeId
-// Note: the server does not have this route yet, so for now it answers 404 (see removeStroke in the model)
 export function deleteStroke(canvasId, strokeId){
     return requestForCanvas(canvasId, "/strokes/" + encodeURIComponent(strokeId), { method: "DELETE" });
+}
+
+
+// ========== Elements (photos, shapes, cutouts) ==========
+// an element: { id, type, x, y, width, height, rotation, zIndex, ...fields of its type } (see utils/elementFields.js)
+
+// all elements of a canvas, oldest first
+export function listElements(canvasId){
+    return requestForCanvas(canvasId, "/elements");
+}
+
+// resolves to the new element id; the canvas id goes in the URL, not the body
+export function addElement(canvasId, element){
+    function getIdACB(data){ return data.elementId; }
+    return requestForCanvas(canvasId, "/elements", withJson("POST", element)).then(getIdACB);
+}
+
+// changes: the changed fields only, at least one
+export function updateElement(canvasId, elementId, changes){
+    return requestForCanvas(canvasId, "/elements/" + encodeURIComponent(elementId), withJson("PUT", changes));
+}
+
+export function deleteElement(canvasId, elementId){
+    return requestForCanvas(canvasId, "/elements/" + encodeURIComponent(elementId), { method: "DELETE" });
 }

@@ -40,7 +40,7 @@ export function CanvasView(props){
 
                     <div className="canvas-title-group">
                         {renderName()}
-                        {renderStrokeSaveStatus()}
+                        {renderSaveStatus()}
                     </div>
 
                     <div className="coming-soon-group">
@@ -59,11 +59,6 @@ export function CanvasView(props){
                             <ButtonView danger title="Delete the selected item (Delete / Backspace)" onClick={props.onDelete}>
                                 Delete {props.selectionLabel.toLowerCase()}
                             </ButtonView>}
-                        {/* the server can only store strokes so far */}
-                        <div className="coming-soon-group">
-                            <button className="small-button" disabled>Save</button>
-                            <span className="coming-soon">Photos and shapes can't be saved yet</span>
-                        </div>
                         {props.isOwner &&
                             <button className="small-button danger-button" title="Remove every line from this canvas"
                                     onClick={clearACB}>Clear lines</button>}
@@ -143,17 +138,17 @@ export function CanvasView(props){
     }
 
     // whether the strokes drawn here reached the server
-    function renderStrokeSaveStatus(){
-        if (props.strokeSaveStatus === "saving")
+    function renderSaveStatus(){
+        if (props.saveStatus === "saving")
             return (
                 <span className="save-status">
-                    <span className="spinner spinner-small" aria-hidden="true"></span> Saving stroke...
+                    <span className="spinner spinner-small" aria-hidden="true"></span> Saving...
                 </span>
             );
-        if (props.strokeSaveStatus === "failed")
+        if (props.saveStatus === "failed")
             return <span className="save-status save-status-failed" role="alert">Some strokes were not saved (shown faded)</span>;
-        if (props.strokeSaveStatus === "saved")
-            return <span className="save-status">All strokes saved</span>;
+        if (props.saveStatus === "saved")
+            return <span className="save-status">All changes saved</span>;
         return null;
     }
 

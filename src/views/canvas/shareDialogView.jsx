@@ -1,6 +1,6 @@
 import "/style.css"
 
-// popup opened by the Share button: the canvas id to give to other people
+// popup opened by the Share button, shows the canvas id to give to others
 export function ShareDialogView(props){
     return (
         // clicking the dark background closes the popup

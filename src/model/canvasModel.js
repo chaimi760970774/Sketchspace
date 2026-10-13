@@ -1,6 +1,9 @@
 import { resolvePromise } from "/src/utils/resolvePromise.js";
 import { searchPhotos, trackDownload } from "/src/api/unsplashSource.js";
 import { toLocalPoint, getCentre, isPointInside } from "/src/utils/geometry.js";
+import { addElement as addElementRequest, updateElement as updateElementRequest, deleteElement as deleteElementRequest } from "/src/api/canvasSource.js";
+import { sendElement, changeElementLive, deleteElementLive } from "/src/api/socketSource.js";
+import { toServerElement, toServerChanges, toLocalElement } from "/src/utils/elementFields.js";
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from "/src/utils/canvasSize.js";
 
 // names used in messages, e.g. "Photo deleted"
@@ -30,13 +33,16 @@ export const canvasModel = {
 
 
     // Elements on the current canvas (photos, shapes, cutouts)
-    // photo:  { id, type: "photo", url, photographer, photographerLink, x, y, width, height, rotation }
-    // shape:  { id, type: "shape", shape: "star", x, y, width, height, rotation, color }
+    // photo:  { id, type: "photo", url, photographer, photographerLink, x, y, width, height, rotation, zIndex }
+    // shape:  { id, type: "shape", shape: "star", x, y, width, height, rotation, zIndex, color }
     //         color null = dashed template, waiting to be cut or filled
-    // cutout: { id, type: "cutout", shape, url, photographer, photographerLink, x, y, width, height, rotation,
+    // cutout: { id, type: "cutout", shape, url, photographer, photographerLink, x, y, width, height, rotation, zIndex,
     //           cutWidth, cutHeight, photo: { x, y, width, height, rotation } }   (see cutWithSelectedShape)
+    // status (frontend only): "saving" until the server gives a new element its id, then "saved"
 
     elements: [],
+    // changes to an element that is still saving, sent once it has its real id: { [temporaryId]: changes }
+    pendingElementChanges: {},
     // what is selected on the canvas: the id of an element (shows resize handles) or of a stroke
     // (highlighted); only one thing at a time, null = nothing
     selectedElementId: null,
@@ -99,9 +105,53 @@ export const canvasModel = {
     },
 
     // Canvas elements
+    // shown at once under a temporary id, saved in the background
     addElement(element){
-        this.elements = [...this.elements, element];
-        this.selectedElementId = element.id;
+        const newElement = { ...element, zIndex: this.getNextZIndex(), status: "saving" };
+        this.elements = [...this.elements, newElement];
+        this.selectedElementId = newElement.id;
+        this.saveNewElement(newElement);
+    },
+    getNextZIndex(){
+        function highestCB(highest, element){ return Math.max(highest, element.zIndex || 0); }
+        return this.elements.reduce(highestCB, 0) + 1;      // elements added later are drawn on top
+    },
+
+    isCanvasOpenNow(canvasId){ return Boolean(this.currentCanvas) && this.currentCanvas._id === canvasId; },
+
+    // over the socket when joined, otherwise REST
+    saveNewElement(element){
+        if (!this.currentCanvas) return;
+        const model = this;
+        const canvasId = this.currentCanvas._id;
+        const temporaryId = element.id;
+        const body = toServerElement(element);
+        const sending = this.isLive() ? sendElement({ ...body, canvasId: canvasId }) : addElementRequest(canvasId, body);
+        sending.then(savedACB).catch(failedACB);
+
+        function savedACB(elementId){
+            if (!model.isCanvasOpenNow(canvasId)) return;
+            function isTemporaryCB(other){ return other.id === temporaryId; }
+            if (model.findElement(elementId)) {
+                // a REST element can come back through "element:added" first: keep one
+                model.elements = model.elements.filter(function isOtherCB(other){ return other.id !== temporaryId; });
+            } else {
+                function renameCB(other){ return isTemporaryCB(other) ? { ...other, id: elementId, status: "saved" } : other; }
+                model.elements = model.elements.map(renameCB);
+            }
+            if (model.selectedElementId === temporaryId) model.selectedElementId = elementId;
+
+            // send the changes made while saving
+            const pending = model.pendingElementChanges[temporaryId];
+            delete model.pendingElementChanges[temporaryId];
+            if (pending) model.sendElementChanges(elementId, pending, {});
+        }
+        function failedACB(error){
+            if (!model.isCanvasOpenNow(canvasId)) return;
+            delete model.pendingElementChanges[temporaryId];
+            model.removeElementLocally(temporaryId);
+            model.showToast("Could not save the " + ELEMENT_LABELS[element.type].toLowerCase() + " (" + error.message + "), it was removed", "error");
+        }
     },
     addPhotoElement(position){
         if (!this.selectedPhoto) return;
@@ -142,8 +192,39 @@ export const canvasModel = {
         this.addShapeElement(shape, { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 });
     },
 
+    // shown at once and saved; the old values come back if the server refuses
     updateElement(id, changes){
-        // a new object for the changed element, so the presenter notices the change
+        const element = this.findElement(id);
+        if (!element) return;
+        const previous = {};
+        function rememberCB(field){ previous[field] = element[field]; }
+        Object.keys(changes).forEach(rememberCB);
+
+        this.changeElementLocally(id, changes);
+        if (!this.currentCanvas) return;
+        // still saving: no real id yet
+        if (element.status === "saving") {
+            this.pendingElementChanges[id] = { ...this.pendingElementChanges[id], ...changes };
+            return;
+        }
+        this.sendElementChanges(id, changes, previous);
+    },
+    sendElementChanges(id, changes, previous){
+        const model = this;
+        const canvasId = this.currentCanvas._id;
+        const body = toServerChanges(changes);
+        if (Object.keys(body).length === 0) return;
+        const sending = this.isLive() ? changeElementLive(id, body) : updateElementRequest(canvasId, id, body);
+        sending.catch(failedACB);
+
+        function failedACB(error){
+            if (!model.isCanvasOpenNow(canvasId)) return;
+            if (model.findElement(id)) model.changeElementLocally(id, previous);
+            model.showToast("Could not save the change (" + error.message + "), it was undone", "error");
+        }
+    },
+    // a new object, so the presenter notices the change
+    changeElementLocally(id, changes){
         function updateCB(element){
             if (element.id !== id) return element;
             return { ...element, ...changes };
@@ -157,14 +238,54 @@ export const canvasModel = {
         return this.elements.find(isTargetCB);
     },
 
-    // photos, shapes and cutouts only live in the frontend, so no request is needed
-    removeElement(id){
+    // removed at once, then deleted on the server; put back if the server refuses
+    // quiet: no "deleted" message (a cut replaces its shape)
+    removeElement(id, quiet){
+        const model = this;
         const element = this.findElement(id);
         if (!element) return;
+        if (element.status === "saving") {
+            this.showToast("This " + ELEMENT_LABELS[element.type].toLowerCase() + " is still being saved, try again in a moment", "info");
+            return;
+        }
+        function isTargetCB(other){ return other.id === id; }
+        const position = this.elements.findIndex(isTargetCB);
+        this.removeElementLocally(id);
+        if (!quiet) this.showToast(ELEMENT_LABELS[element.type] + " deleted", "success");
+        if (!this.currentCanvas) return;
+
+        const canvasId = this.currentCanvas._id;
+        const sending = this.isLive() ? deleteElementLive(id) : deleteElementRequest(canvasId, id);
+        sending.catch(failedACB);
+
+        function failedACB(error){
+            if (!model.isCanvasOpenNow(canvasId) || model.findElement(id)) return;
+            model.elements = [...model.elements.slice(0, position), element, ...model.elements.slice(position)];
+            model.showToast("Could not delete the " + ELEMENT_LABELS[element.type].toLowerCase() + " (" + error.message + "), it was put back", "error");
+        }
+    },
+    removeElementLocally(id){
         function isOtherCB(other){ return other.id !== id; }
         this.elements = this.elements.filter(isOtherCB);
-        this.selectedElementId = null;
-        this.showToast(ELEMENT_LABELS[element.type] + " deleted", "success");
+        if (this.selectedElementId === id) this.selectedElementId = null;
+    },
+
+    // changes made by other people
+    addRemoteElement(serverElement){
+        if (!this.currentCanvas || serverElement.canvasId !== this.currentCanvas._id) return;
+        if (this.findElement(serverElement.id)) return;     // our own REST element, announced to everyone
+        this.elements = [...this.elements, toLocalElement(serverElement)];
+    },
+    // carries the full new state
+    updateRemoteElement(serverElement){
+        if (!this.currentCanvas || serverElement.canvasId !== this.currentCanvas._id) return;
+        const element = toLocalElement(serverElement);
+        if (!this.findElement(element.id)) {
+            this.elements = [...this.elements, element];
+            return;
+        }
+        // merged, so fields the server does not keep survive
+        this.changeElementLocally(element.id, element);
     },
 
     // Deleting whatever is selected (element or stroke), used by the Delete key and the Delete button
@@ -237,6 +358,10 @@ export const canvasModel = {
         if (!template) return;
         const photo = this.findPhotoUnder(template);
         if (!photo) return;
+        if (template.status === "saving") {
+            this.showToast("The shape is still being saved, try again in a moment", "info");
+            return;
+        }
 
         // where the photo sits inside the template's box, so the cutout can draw the same part of it
         const photoCorner = toLocalPoint(template, { x: photo.x, y: photo.y });
@@ -266,8 +391,7 @@ export const canvasModel = {
         };
 
         // the template is used up, the cutout takes its place (the photo stays)
-        function isNotTemplateCB(element){ return element.id !== template.id; }
-        this.elements = this.elements.filter(isNotTemplateCB);
+        this.removeElement(template.id, true);
         this.addElement(cutout);
     },
 

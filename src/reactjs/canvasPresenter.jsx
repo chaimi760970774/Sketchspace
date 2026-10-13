@@ -67,7 +67,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         renaming={props.model.renamingCanvas}
                         nameDraft={props.model.canvasNameDraft}
                         nameError={props.model.canvasNameError}
-                        strokeSaveStatus={props.model.getStrokeSaveStatus()}
+                        saveStatus={props.model.getSaveStatus()}
                         canDelete={props.model.canDeleteSelection()}
                         selectionLabel={props.model.getSelectionLabel()}
 

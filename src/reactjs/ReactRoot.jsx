@@ -4,16 +4,19 @@ import { Profile } from "./profilePresenter.jsx";
 import { Canvas } from "./canvasPresenter.jsx";
 import { Login } from "./loginPresenter.jsx";
 import { Sidebar } from "./sidebarPresenter.jsx";
+import { Toast } from "./toastPresenter.jsx";
 
 import { observer } from "mobx-react-lite";
 import { createHashRouter, RouterProvider, Outlet } from "react-router-dom";
 
 
+// the router is made once in index.jsx and passed in, so it is not rebuilt on every render
 const ReactRoot = observer(
     function ReactRoot(props){
         return (
             <div>
-                <RouterProvider router={makeRouter(props.model)}/>
+                <RouterProvider router={props.router}/>
+                <Toast model={props.model}/>
             </div>
         );
     }
@@ -22,9 +25,11 @@ const ReactRoot = observer(
 
 function LayoutWithSidebar({model}) {
     return (
-        <div>
+        <div className="layout">
             <Sidebar model={model} />
-            <Outlet />
+            <div className="main-content">
+                <Outlet />
+            </div>
         </div>
     );
 }
@@ -60,6 +65,10 @@ export function makeRouter(model){
         },
         {
             path: "/canvas",
+            element: <Canvas model={model} />,
+        },
+        {
+            path: "/canvas/:canvasId",
             element: <Canvas model={model} />,
         },
     ]);

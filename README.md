@@ -70,10 +70,10 @@ We use Model-View-Presenter (MVP). In short:
 ```
 src/
 ├── model/
-│   ├── mobxReactiveModel.js   puts the three parts below together into one model
-│   ├── userModel.js           user, login, profile
-│   ├── galleryModel.js        canvas list, search, folders
-│   └── canvasModel.js         what's on the canvas, tools, photo search
+│   ├── mobxReactiveModel.ts   puts the three parts below together into one model
+│   ├── userModel.ts           user, login, profile
+│   ├── galleryModel.ts        canvas list, search, folders
+│   └── canvasModel.ts         what's on the canvas, tools, photo search
 ├── reactjs/                   presenters, one per page
 ├── views/                     views, one per page
 │   └── canvas/                views for the canvas page

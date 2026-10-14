@@ -9,10 +9,12 @@ interface ProfileViewProps {
     draft: string;
     error: string;
     hasUnsavedDraft: boolean;
+    savingPhoto: boolean;               // true while the photo is uploaded or removed
     onModify: (field: ProfileField) => void;
     onDraftChange: (text: string) => void;
     onSave: () => void;
     onPhotoUpload: (file: File) => void;
+    onPhotoRemove: () => void;
     onLogin: () => void;
     onLogout: () => void;
 }
@@ -32,16 +34,25 @@ export function ProfileView(props: ProfileViewProps){
     return (
         <div className="profile-card">
             <div className="profile-header">
-                {props.user.photoURL
-                    ? <img className="profile-avatar" src={props.user.photoURL} alt="Profile photo"/>
-                    : <div className="profile-avatar"></div>}
+                <div className="profile-avatar-box">
+                    {props.user.photoURL
+                        ? <img className="profile-avatar" src={props.user.photoURL} alt="Profile photo"/>
+                        : <div className="profile-avatar"></div>}
+                    {props.savingPhoto && <div className="spinner profile-avatar-spinner" role="status" aria-label="Saving photo"></div>}
+                </div>
 
                 <div className="profile-name">{props.user.name}</div>
 
-                <label className="upload-label">
-                    Upload photo
-                    <input type="file" accept="image/*" onChange={photoChangeACB}/>
-                </label>
+                {props.isLoggedIn
+                    ? <div className="profile-photo-actions">
+                          <label className={props.savingPhoto ? "upload-label disabled" : "upload-label"}>
+                              Upload photo
+                              <input type="file" accept="image/*" disabled={props.savingPhoto} onChange={photoChangeACB}/>
+                          </label>
+                          {props.user.photoURL &&
+                              <button className="pill-button" disabled={props.savingPhoto} onClick={props.onPhotoRemove}>Remove photo</button>}
+                      </div>
+                    : <div className="profile-value">Log in to upload a profile photo</div>}
             </div>
 
             {fields.map(fieldRowCB)}
@@ -54,6 +65,9 @@ export function ProfileView(props: ProfileViewProps){
 
     function photoChangeACB(evt: ChangeEvent<HTMLInputElement>){
         const file = evt.target.files?.[0];
+        // clear the input so picking the same file again (e.g. after an error) still fires onChange;
+        // the file input can only be reset by changing its value
+        evt.target.value = "";
         if (file) props.onPhotoUpload(file);
     }
 

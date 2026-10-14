@@ -18,7 +18,7 @@ interface Credentials {
     password: string;
 }
 
-// avatarUrl is an https URL, or null to remove it
+// avatarUrl is an https URL, a data:image/png|jpeg|webp;base64 URL (at most 204800 characters), or null to remove it
 interface UserChanges {
     displayName?: string;
     avatarUrl?: string | null;
@@ -46,6 +46,12 @@ export function getMe(): Promise<ServerUser> {
 // resolves to the user
 export function updateMe(changes: UserChanges): Promise<ServerUser> {
     return request<ServerUser>("/api/users/me", withJson("PUT", changes));
+}
+
+// saves the profile photo (a data URL or https URL), or removes it with null; resolves to the user.
+// 400 with { error } if the image is not accepted (wrong format or too large)
+export function updateAvatar(avatarUrl: string | null): Promise<ServerUser> {
+    return updateMe({ avatarUrl: avatarUrl });
 }
 
 function getUserACB(data: UserResponse): ServerUser { return data.user; }

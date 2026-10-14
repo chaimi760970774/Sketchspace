@@ -14,11 +14,13 @@ const Profile = observer(// observer needed for the presenter to update (its vie
                             draft={props.model.profileDraft}
                             error={props.model.getProfileError()}
                             hasUnsavedDraft={props.model.hasUnsavedDraft()}
+                            savingPhoto={props.model.savingPhoto}
 
                             onModify={handlerModifyACB}
                             onDraftChange={handlerDraftChangeACB}
                             onSave={handlerSaveACB}
                             onPhotoUpload={handlerPhotoUploadACB}
+                            onPhotoRemove={handlerPhotoRemoveACB}
                             onLogin={handlerLoginACB}
                             onLogout={handlerLogoutACB}/>;
 
@@ -27,6 +29,7 @@ const Profile = observer(// observer needed for the presenter to update (its vie
         function handlerSaveACB(){ props.model.saveEdit(); }
 
         function handlerPhotoUploadACB(file: File){ props.model.uploadPhoto(file); }
+        function handlerPhotoRemoveACB(){ props.model.removePhoto(); }
 
         function handlerLoginACB(){ navigate("/login"); }
         function handlerLogoutACB(){ props.model.logoutUser().then(() => navigate("/login")); }

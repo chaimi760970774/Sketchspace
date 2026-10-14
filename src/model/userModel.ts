@@ -1,5 +1,6 @@
 import { setTokenOwner, getOwnedCanvasIds, claimCanvas } from "/src/api/canvasSource.ts";
-import { register as registerRequest, login as loginRequest, logout as logoutRequest, getMe, updateMe } from "/src/api/authSource.ts";
+import { register as registerRequest, login as loginRequest, logout as logoutRequest, getMe, updateMe, updateAvatar } from "/src/api/authSource.ts";
+import { resizeAvatar } from "/src/utils/resizeAvatar.ts";
 import { resolvePromise } from "/src/utils/resolvePromise.ts";
 import type { Model, ProfileField, ServerUser, User } from "./types.ts";
 
@@ -33,6 +34,7 @@ interface UserState {
     // Profile
     editingField: ProfileField | null;      // field being edited, null = none
     profileDraft: string;                   // input value while editing
+    savingPhoto: boolean;                   // true while a photo is uploaded or removed
 }
 
 const initialState: UserState = {
@@ -46,6 +48,7 @@ const initialState: UserState = {
     loggingIn: false,
     editingField: null,
     profileDraft: "",
+    savingPhoto: false,
 };
 
 // user, login, profile
@@ -207,16 +210,58 @@ export const userModel = {
         }
         function failedACB(error: Error): void { model.showToast("Could not save the name: " + error.message, "error"); }
     },
-    setPhotoURL(url: string): void {
+    setPhotoURL(url: string | null): void {
         this.user = { ...this.user, photoURL: url };
-        this.showToast("Profile photo updated", "success");
     },
 
-    // local preview only: the server keeps an avatar as an https link, not an uploaded file
-    uploadPhoto(file: File): void {
+    // shrinks the image to a 256x256 JPEG and saves it on the server; the new photo shows right away
+    // and the old one comes back if saving fails
+    uploadPhoto(file: File): Promise<void> {
+        if (!this.isLoggedIn || this.savingPhoto) return Promise.resolve();
+        if (!file.type.startsWith("image/")) {
+            this.showToast("Please choose an image file", "error");
+            return Promise.resolve();
+        }
+        const model = this;
+        const userId = this.user.id;
         const oldURL = this.user.photoURL;
-        this.setPhotoURL(URL.createObjectURL(file));
-        // a "blob:" URL keeps the old file in memory until it is revoked; other URLs are left alone
-        if (oldURL && oldURL.startsWith("blob:")) URL.revokeObjectURL(oldURL);
+        this.savingPhoto = true;
+        return resizeAvatar(file).then(resizedACB).then(savedACB).catch(failedACB).finally(doneACB);
+
+        function resizedACB(dataUrl: string): Promise<ServerUser> {
+            model.setPhotoURL(dataUrl);
+            return updateAvatar(dataUrl);
+        }
+        // the user may have logged out while the photo was saving: then there is nothing to update
+        function savedACB(serverUser: ServerUser): void {
+            if (model.user.id !== userId) return;
+            model.setPhotoURL(toUser(serverUser).photoURL);
+            model.showToast("Profile photo updated", "success");
+        }
+        function failedACB(error: Error): void {
+            if (model.user.id !== userId) return;
+            model.setPhotoURL(oldURL);
+            model.showToast("Could not save the photo: " + error.message, "error");
+        }
+        function doneACB(): void { model.savingPhoto = false; }
+    },
+
+    removePhoto(): Promise<void> {
+        if (!this.isLoggedIn || this.savingPhoto || !this.user.photoURL) return Promise.resolve();
+        const model = this;
+        const userId = this.user.id;
+        this.savingPhoto = true;
+        return updateAvatar(null).then(removedACB).catch(failedACB).finally(doneACB);
+
+        function removedACB(serverUser: ServerUser): void {
+            if (model.user.id !== userId) return;
+            model.setPhotoURL(toUser(serverUser).photoURL);
+            model.showToast("Profile photo removed", "success");
+        }
+        function failedACB(error: Error): void {
+            if (model.user.id !== userId) return;
+            model.showToast("Could not remove the photo: " + error.message, "error");
+        }
+        function doneACB(): void { model.savingPhoto = false; }
     },
 } satisfies ThisType<Model>;    // inside the methods, `this` is the whole merged model

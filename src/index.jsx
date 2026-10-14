@@ -7,6 +7,9 @@ import { createRoot } from "react-dom/client";
 // needed in the lab because it works with both React and Vue; a global can only be set by assignment
 window.React = { createElement, Fragment };
 
+// a login from an earlier visit is picked up from the cookie
+reactiveModel.restoreSession();
+
 // created once here, outside any component
 const router = makeRouter(reactiveModel);
 

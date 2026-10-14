@@ -475,3 +475,6 @@ button { font: inherit; cursor: pointer; }
 .share-id-row { display: flex; gap: 12px; align-items: center; }
 .share-id-row .search-input { font-family: monospace; font-size: 16px; }
 .share-private-row { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+
+/* ========== Login errors ========== */
+.login-error { grid-column: 2; }

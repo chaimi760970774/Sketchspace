@@ -2,8 +2,8 @@ import "/style.css"
 
 export function ProfileView(props){
     const fields = [
-        { key: "name", label: "Name" },
-        { key: "email", label: "Email" },
+        { key: "name", label: "Name", editable: props.isLoggedIn },
+        { key: "email", label: "Email", editable: false },      // the server keeps the email
     ];
 
     return (
@@ -22,6 +22,10 @@ export function ProfileView(props){
             </div>
 
             {fields.map(fieldRowCB)}
+
+            {props.isLoggedIn
+                ? <button className="pill-button" onClick={props.onLogout}>Log out</button>
+                : <button className="pill-button" onClick={props.onLogin}>Log in or sign up</button>}
         </div>
     );
 
@@ -51,9 +55,8 @@ export function ProfileView(props){
                     {isEditing && props.error && <div className="field-error">{props.error}</div>}
                 </div>
 
-                {isEditing
-                    ? <button className="pill-button" disabled={Boolean(props.error)} onClick={props.onSave}>Save</button>
-                    : <button className="pill-button" onClick={clickModifyACB}>Modify</button>}
+                {isEditing && <button className="pill-button" disabled={Boolean(props.error)} onClick={props.onSave}>Save</button>}
+                {!isEditing && field.editable && <button className="pill-button" onClick={clickModifyACB}>Modify</button>}
             </div>
         );
     }

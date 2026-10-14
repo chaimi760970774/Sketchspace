@@ -9,22 +9,30 @@ const Login = observer(// observer needed for the presenter to update (its view)
 
         return <LoginView email={props.model.loginEmail}
                           password={props.model.loginPassword}
+                          name={props.model.loginName}
+                          signingUp={props.model.signingUp}
+                          error={props.model.loginError}
+                          busy={props.model.loggingIn}
 
                           onEmailChange={handlerEmailChangeACB}
                           onPasswordChange={handlerPasswordChangeACB}
+                          onNameChange={handlerNameChangeACB}
                           onLogin={handlerLoginACB}
                           onGoogleLogin={handlerGoogleLoginACB}
                           onGuestLogin={handlerGuestLoginACB}
-                          onSignUp={handlerSignUpACB}/>;
+                          onToggleSignUp={handlerToggleSignUpACB}/>;
 
         function handlerEmailChangeACB(email){ props.model.setLoginEmail(email); }
         function handlerPasswordChangeACB(password){ props.model.setLoginPassword(password); }
 
-        // all go straight to gallery for now, connect to the login API later
-        function handlerLoginACB(){ navigate("/gallery"); }
-        function handlerGoogleLoginACB(){ navigate("/gallery"); }
-        function handlerGuestLoginACB(){ navigate("/gallery"); }
-        function handlerSignUpACB(){ navigate("/gallery"); }
+        function handlerNameChangeACB(name){ props.model.setLoginName(name); }
+        function handlerToggleSignUpACB(){ props.model.toggleSignUp(); }
+
+        // logging in (or signing up) goes to the gallery once the server accepted it
+        function handlerLoginACB(){ props.model.submitLogin().then(goToGalleryACB); }
+        function goToGalleryACB(loggedIn){ if (loggedIn) navigate("/gallery"); }
+        function handlerGoogleLoginACB(){ props.model.googleLogin(); }
+        function handlerGuestLoginACB(){ props.model.continueAsGuest().then(() => navigate("/gallery")); }
     }
 );
 

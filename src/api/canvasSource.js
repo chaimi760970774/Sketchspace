@@ -16,8 +16,9 @@ export class ApiError extends Error {
 }
 
 // sends one request and returns the JSON answer
-function request(path, options){
-    return fetch(API_URL + path, options).then(gotResponseACB, networkErrorACB);
+// credentials: "include" sends the login cookie to the server (another origin), which has to allow this origin
+export function request(path, options){
+    return fetch(API_URL + path, { credentials: "include", ...options }).then(gotResponseACB, networkErrorACB);
 
     function networkErrorACB(){
         throw new ApiError("Cannot reach the server, please check that it is running", 0, false);
@@ -38,7 +39,7 @@ function request(path, options){
 }
 
 // options for a request that sends JSON
-function withJson(method, body){
+export function withJson(method, body){
     return {
         method: method,
         headers: { "Content-Type": "application/json" },
@@ -49,18 +50,24 @@ function withJson(method, body){
 // ========== Owner tokens ==========
 // POST /api/canvas returns the ownerToken once, so it is kept per canvas in this browser
 // and sent as X-Owner-Token on every request for that canvas.
+// Tokens are kept per user, so accounts that share a browser do not see each other's canvases.
+// (The server does not link canvases to accounts yet, so this is only true in this browser.)
 
-const TOKENS_KEY = "sketchspace-owner-tokens";
+const TOKENS_KEY = "sketchspace-owner-tokens";       // guests; a logged-in user has "...:<user id>"
+let tokenOwnerId = null;                             // the logged-in user's id, null for a guest
+
+export function setTokenOwner(userId){ tokenOwnerId = userId; }
+function tokensKey(){ return tokenOwnerId ? TOKENS_KEY + ":" + tokenOwnerId : TOKENS_KEY; }
 
 function readTokens(){
     try {
-        return JSON.parse(localStorage.getItem(TOKENS_KEY)) || {};
+        return JSON.parse(localStorage.getItem(tokensKey())) || {};
     } catch (error) {
         return {};      // storage blocked or unreadable: no tokens
     }
 }
 function writeTokens(tokens){
-    try { localStorage.setItem(TOKENS_KEY, JSON.stringify(tokens)); } catch (error) { /* storage blocked */ }
+    try { localStorage.setItem(tokensKey(), JSON.stringify(tokens)); } catch (error) { /* storage blocked */ }
 }
 
 export function getOwnerToken(canvasId){ return readTokens()[canvasId] || null; }
@@ -90,11 +97,16 @@ function requestForCanvas(canvasId, pathAfterId, options){
 
 
 // ========== Canvases ==========
-// a canvas: { _id, name, isShared, createdAt, updatedAt, layers }
+// a canvas: { _id, name, isShared, createdAt, updatedAt, layers }; getCanvas adds isOwner (the caller owns it)
 
 // shared canvases only
 export function listCanvases(){
     return request("/api/canvas");
+}
+
+// the logged-in user's canvases, shared and private (rejects with 401 for a guest)
+export function listMyCanvases(){
+    return request("/api/canvas/mine");
 }
 
 export function getCanvas(canvasId){
@@ -109,6 +121,11 @@ export function createCanvas({ name, isShared }){
         return data.canvasId;
     }
     return request("/api/canvas", withJson("POST", { name: name, isShared: isShared })).then(saveTokenACB);
+}
+
+// attaches a canvas made with an owner token to the logged-in account; the token (sent automatically) proves it is theirs
+export function claimCanvas(canvasId){
+    return requestForCanvas(canvasId, "/claim", { method: "POST" });
 }
 
 // changes: { name?, isShared? }, at least one; owner only (the server answers 403 otherwise)

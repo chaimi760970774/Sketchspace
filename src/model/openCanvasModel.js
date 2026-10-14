@@ -1,6 +1,6 @@
 import { resolvePromise, isPending } from "/src/utils/resolvePromise.js";
 import { getCanvas, listStrokes, listElements, addStroke, deleteStroke, clearStrokes } from "/src/api/canvasSource.js";
-import { startSocket, isSocketConnected, joinCanvas, leaveCanvas, sendStroke, deleteStrokeLive, clearCanvasStrokes } from "/src/api/socketSource.js";
+import { startSocket, stopSocket, isSocketConnected, joinCanvas, leaveCanvas, sendStroke, deleteStrokeLive, clearCanvasStrokes } from "/src/api/socketSource.js";
 import { getOwnerToken, isCanvasOwner } from "/src/api/canvasSource.js";
 import { toLocalElement } from "/src/utils/elementFields.js";
 import { validateStroke } from "/src/utils/validateStroke.js";
@@ -175,6 +175,14 @@ export const openCanvasModel = {
         this.selectedElementId = null;
     },
 
+    // after a login or logout the connection still carries the old login: close it, the next canvas opens a new one
+    resetLiveConnection(){
+        stopSocket();
+        this.joinedCanvasId = null;
+        this.peerCount = 0;
+        this.liveStatus = "offline";
+    },
+
     // the canvas page closed or another canvas opened
     leaveLiveCanvas(){
         if (this.joinedCanvasId) leaveCanvas();
@@ -270,8 +278,11 @@ export const openCanvasModel = {
         return this.setCanvasShared(this.currentCanvas._id, false);
     },
 
-    // only the owner (holds the token) can change sharing
-    isCurrentCanvasOwner(){ return Boolean(this.currentCanvas) && isCanvasOwner(this.currentCanvas._id); },
+    // only the owner (the account, or whoever holds the token) can change sharing; the server says if the account owns it
+    isCurrentCanvasOwner(){
+        if (!this.currentCanvas) return false;
+        return this.currentCanvas.isOwner === true || isCanvasOwner(this.currentCanvas._id);
+    },
 
     // Strokes
     // The one place a stroke is added: over the socket when joined, otherwise REST.

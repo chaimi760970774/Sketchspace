@@ -1,5 +1,6 @@
 import { setTokenOwner, getOwnedCanvasIds, claimCanvas } from "/src/api/canvasSource.ts";
 import { register as registerRequest, login as loginRequest, logout as logoutRequest, getMe, updateMe } from "/src/api/authSource.ts";
+import { resolvePromise } from "/src/utils/resolvePromise.ts";
 import type { Model, ProfileField, ServerUser, User } from "./types.ts";
 
 // simple check: something@something.something
@@ -84,10 +85,17 @@ export const userModel = {
         setTokenOwner(this.isLoggedIn ? this.user.id : null);
         this.canvases = [];
         this.myCanvasIds = [];
+        // folders belong to the account: the next one loads its own
+        this.folders = [];
+        this.selectedFolderId = null;
+        this.cancelNewFolder();
+        resolvePromise(null, this.foldersPromiseState);
         if (!this.isLoggedIn) {
             this.loadCanvases();
             return;
         }
+        // e.g. after a page refresh My Work opened before the login was restored: load the account's folders now
+        this.loadFolders();
         // canvases this account made before the server knew accounts (held by owner token) become the account's
         function claimCB(canvasId: string): Promise<unknown> { return claimCanvas(canvasId).catch(ignoreCB); }
         function ignoreCB(): void {}      // deleted, or already someone else's: nothing to do

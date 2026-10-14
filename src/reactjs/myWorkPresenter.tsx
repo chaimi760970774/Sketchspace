@@ -9,8 +9,8 @@ const MyWork = observer(// observer needed for the presenter to update (its view
     function MyWork(props: PresenterProps){
         const navigate = useNavigate();
 
-        // load the canvas list every time the page is opened
-        useEffect(loadCanvasesACB, []);
+        // load the canvases and the folders every time the page is opened
+        useEffect(loadMyWorkACB, []);
 
         return <MyWorkView canvases={props.model.getMyCanvases()}
                            folders={props.model.getMyFolders()}
@@ -24,9 +24,15 @@ const MyWork = observer(// observer needed for the presenter to update (its view
                            newFolderOpen={props.model.newFolderOpen}
                            newFolderName={props.model.newFolderName}
                            newFolderError={props.model.newFolderError}
+                           canUseFolders={props.model.canUseFolders()}
+                           foldersLoading={props.model.isLoadingFolders()}
+                           foldersError={props.model.getFoldersError()}
+                           creatingFolder={props.model.creatingFolder}
+                           busyFolderIds={props.model.busyFolderIds}
 
                            onSearchChange={handlerSearchChangeACB}
                            onRetry={handlerRetryACB}
+                           onFoldersRetry={handlerFoldersRetryACB}
                            onFolderClick={handlerFolderClickACB}
                            onNewFolderOpen={handlerNewFolderOpenACB}
                            onNewFolderNameChange={handlerNewFolderNameChangeACB}
@@ -41,10 +47,11 @@ const MyWork = observer(// observer needed for the presenter to update (its view
                            onNewCanvas={handlerNewCanvasACB}
                            onCardClick={handlerCardClickACB}/>;
 
-        function loadCanvasesACB(){ props.model.loadCanvases(); }
+        function loadMyWorkACB(){ props.model.loadMyWork(); }
 
         function handlerSearchChangeACB(text: string){ props.model.setMyWorkSearchText(text); }
         function handlerRetryACB(){ props.model.loadCanvases(); }
+        function handlerFoldersRetryACB(){ props.model.loadFolders(); }
         function handlerFolderClickACB(folderId: string | null){ props.model.selectFolder(folderId); }
         function handlerNewFolderOpenACB(){ props.model.openNewFolder(); }
         function handlerNewFolderNameChangeACB(name: string){ props.model.setNewFolderName(name); }

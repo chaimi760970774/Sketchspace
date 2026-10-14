@@ -16,8 +16,14 @@ interface MyWorkViewProps {
     newFolderOpen: boolean;
     newFolderName: string;
     newFolderError: string;
+    canUseFolders: boolean;             // false for a guest: folders need an account
+    foldersLoading: boolean;
+    foldersError: string;
+    creatingFolder: boolean;            // a new folder is being saved
+    busyFolderIds: string[];            // folders being deleted
     onSearchChange: (text: string) => void;
     onRetry: () => void;
+    onFoldersRetry: () => void;
     onFolderClick: (folderId: string | null) => void;
     onNewFolderOpen: () => void;
     onNewFolderNameChange: (name: string) => void;
@@ -44,11 +50,7 @@ export function MyWorkView(props: MyWorkViewProps){
                    value={props.searchText} onChange={searchChangeACB}/>
 
             <div className="folder-bar">
-                <div className="folder-tabs">
-                    {renderTab(null, "All")}
-                    {props.folders.map(folderTabCB)}
-                </div>
-                {renderNewFolder()}
+                {renderFolderBar()}
             </div>
 
             {renderCanvases()}
@@ -75,6 +77,30 @@ export function MyWorkView(props: MyWorkViewProps){
         if (props.searchText) return "No canvas found";
         if (props.selectedFolderId) return "Drag a canvas onto this folder to add it";
         return "No canvas yet";
+    }
+
+    // the folder tabs and the "+" button, or why they are not there
+    function renderFolderBar(){
+        if (!props.canUseFolders)
+            return <span className="folder-hint">Log in to organise canvases into folders</span>;
+        if (props.foldersLoading)
+            return <div className="spinner spinner-small" role="status" aria-label="Loading folders"></div>;
+        if (props.foldersError)
+            return (
+                <div className="load-error folder-load-error" role="alert">
+                    <span>Could not load folders: {props.foldersError}</span>
+                    <button className="small-button" onClick={props.onFoldersRetry}>Retry</button>
+                </div>
+            );
+        return (
+            <>
+                <div className="folder-tabs">
+                    {renderTab(null, "All")}
+                    {props.folders.map(folderTabCB)}
+                </div>
+                {renderNewFolder()}
+            </>
+        );
     }
 
     // Folder tabs
@@ -104,8 +130,11 @@ export function MyWorkView(props: MyWorkViewProps){
             if (canvasId) props.onMoveCanvas(canvasId, folderId);
         }
 
+        const deleting = folderId !== null && props.busyFolderIds.includes(folderId);
+
         function deleteFolderACB(evt: MouseEvent<HTMLSpanElement>){
             evt.stopPropagation();      // do not also open the tab
+            if (deleting) return;       // already being deleted
             const confirmed = window.confirm("Delete folder \"" + label + "\"? Its canvases stay in All.");
             if (confirmed && folderId) props.onDeleteFolder(folderId);
         }
@@ -114,19 +143,22 @@ export function MyWorkView(props: MyWorkViewProps){
             <button key={tabKey} className={className} onClick={clickTabACB}
                     onDragOver={dragOverACB} onDragLeave={dragLeaveACB} onDrop={dropACB}>
                 {label}
-                {folderId && isActive &&
+                {folderId && isActive && !deleting &&
                     <span className="folder-delete" title="Delete folder" onClick={deleteFolderACB}>×</span>}
+                {deleting && <span className="spinner spinner-small folder-spinner" role="status" aria-label="Deleting folder"></span>}
             </button>
         );
     }
 
     // "+" button, or the name input after clicking it (Enter creates, Esc cancels, clicking away creates if a name was typed)
+    // while it saves, the input is read-only (not disabled, which would take the focus away and send it again)
     function renderNewFolder(){
         if (!props.newFolderOpen)
             return <button className="folder-add" title="New folder" onClick={props.onNewFolderOpen}>+</button>;
 
         function nameChangeACB(evt: ChangeEvent<HTMLInputElement>){ props.onNewFolderNameChange(evt.target.value); }
         function keyDownACB(evt: KeyboardEvent<HTMLInputElement>){
+            if (props.creatingFolder) return;
             if (evt.key === "Enter") props.onNewFolderCreate();
             if (evt.key === "Escape") props.onNewFolderCancel();
         }
@@ -135,9 +167,11 @@ export function MyWorkView(props: MyWorkViewProps){
             <>
                 <input className="folder-name-input" placeholder="Folder name" autoFocus
                        aria-label="New folder name" aria-invalid={Boolean(props.newFolderError)}
+                       readOnly={props.creatingFolder} aria-busy={props.creatingFolder}
                        value={props.newFolderName} onChange={nameChangeACB}
                        onKeyDown={keyDownACB} onBlur={props.onNewFolderLeave}/>
-                {props.newFolderError && <span className="field-error">{props.newFolderError}</span>}
+                {props.creatingFolder && <span className="spinner spinner-small" role="status" aria-label="Creating folder"></span>}
+                {props.newFolderError && <span className="field-error" role="alert">{props.newFolderError}</span>}
             </>
         );
     }

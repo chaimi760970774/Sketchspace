@@ -156,6 +156,12 @@ export function claimCanvas(canvasId: string): Promise<OkResponse> {
     return requestForCanvas<OkResponse>(canvasId, "/claim", { method: "POST" });
 }
 
+// moves the canvas into one of the account's folders, or out of any folder with null
+// (logged-in owner only; a canvas held only by an owner token must be claimed first, otherwise 403)
+export function setCanvasFolder(canvasId: string, folderId: string | null): Promise<OkResponse> {
+    return requestForCanvas<OkResponse>(canvasId, "/folder", withJson("PUT", { folderId: folderId }));
+}
+
 // at least one change; owner only (the server answers 403 otherwise)
 export function updateCanvas(canvasId: string, changes: CanvasChanges): Promise<OkResponse> {
     return requestForCanvas<OkResponse>(canvasId, "", withJson("PUT", changes));

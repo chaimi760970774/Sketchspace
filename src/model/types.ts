@@ -43,6 +43,9 @@ export interface Canvas {
     updatedAt: string;
     layers?: { id: string; order: number; visible: boolean }[];
     isOwner?: boolean;
+    // the account's folder this canvas is in, null = no folder; only GET /api/canvas/mine sends it
+    // (shared canvases and GET /api/canvas/:id leave it out)
+    folderId?: string | null;
 }
 
 // what PUT /api/canvas/:id can change
@@ -174,10 +177,12 @@ export type ProfileField = "name" | "email";
 
 // ========== Other UI data ==========
 
+// a folder of the logged-in account, as the server sends it (id, not _id, like users and elements)
 export interface Folder {
     id: string;
     name: string;
-    owner: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface Collaborator {

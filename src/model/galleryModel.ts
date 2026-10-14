@@ -1,6 +1,11 @@
 import { resolvePromise, isPending } from "/src/utils/resolvePromise.ts";
-import { listCanvases, listMyCanvases, getCanvas, createCanvas, updateCanvas, deleteCanvas, getOwnedCanvasIds, isCanvasOwner, forgetOwnerToken } from "/src/api/canvasSource.ts";
+import { listCanvases, listMyCanvases, getCanvas, createCanvas, updateCanvas, deleteCanvas, getOwnedCanvasIds, isCanvasOwner, forgetOwnerToken,
+         setCanvasFolder as setCanvasFolderRequest, claimCanvas } from "/src/api/canvasSource.ts";
+import { listFolders, createFolder as createFolderRequest, deleteFolder as deleteFolderRequest } from "/src/api/folderSource.ts";
 import type { Canvas, CanvasChanges, Folder, Model, PromiseState, RequestError } from "./types.ts";
+
+// same rule as the server: 1-30 characters after trimming, counted per character (an emoji is one)
+const MAX_FOLDER_NAME = 30;
 
 interface GalleryState {
     // Data
@@ -8,16 +13,13 @@ interface GalleryState {
     canvases: Canvas[];
     // the ids of the canvases the logged-in account owns, from the server (a guest's are found through owner tokens)
     myCanvasIds: string[];
-    // Folders created by users (replace with data from the REST API later)
-    // A folder only belongs to its owner and is only shown in their My Work
+    // The logged-in account's folders, loaded from the server by loadFolders(); a guest has none.
+    // Which folder a canvas is in is its own folderId.
     folders: Folder[];
-    // Which folder each canvas is in: canvas id -> folder id; a canvas that is not listed is in no folder
-    // TODO: the server has no folders yet, so this only lives in the frontend and is lost on reload.
-    //       Move it to the server once it supports folders.
-    canvasFolders: Record<string, string>;
 
     // Page state
     canvasesPromiseState: PromiseState<Canvas[]>;   // loading the canvas list
+    foldersPromiseState: PromiseState<Folder[]>;    // loading the folders
     busyCanvasIds: string[];        // canvases with a request running (delete / share / rename), their buttons wait
     creatingCanvas: boolean;        // true while a new canvas is being created
     createCanvasError: string;      // why the last create failed, "" if it did not
@@ -33,16 +35,16 @@ interface GalleryState {
     newFolderOpen: boolean;             // true while the new folder name input is shown
     newFolderName: string;
     newFolderError: string;             // shown next to the input when the name cannot be used
+    creatingFolder: boolean;            // true while a new folder is being saved
+    busyFolderIds: string[];            // folders being deleted, their delete button waits
 }
 
 const initialState: GalleryState = {
     canvases: [],
     myCanvasIds: [],
-    folders: [
-        { id: "f1", name: "Travel", owner: "guest" },
-    ],
-    canvasFolders: {},
+    folders: [],
     canvasesPromiseState: {},
+    foldersPromiseState: {},
     busyCanvasIds: [],
     creatingCanvas: false,
     createCanvasError: "",
@@ -55,6 +57,8 @@ const initialState: GalleryState = {
     newFolderOpen: false,
     newFolderName: "",
     newFolderError: "",
+    creatingFolder: false,
+    busyFolderIds: [],
 };
 
 // the list being loaded, with the ids of the canvases the account owns
@@ -74,25 +78,38 @@ export const galleryModel = {
 
     // ========== Methods ==========
 
-    // Loading the list
-    loadCanvases(): void {
+    // My Work needs the canvases and the folders; both are loaded at the same time
+    loadMyWork(): Promise<void> {
+        function doneACB(): void {}     // each load reports its own result
+        return Promise.all([this.loadCanvases(), this.loadFolders()]).then(doneACB);
+    },
+
+    // Loading the list; resolves when it is done (failures are shown, not passed on)
+    loadCanvases(): Promise<void> {
         const model = this;
         const mine: Promise<Canvas[]> = this.isLoggedIn ? listMyCanvases() : Promise.resolve([]);
         const loading = Promise.all([listCanvases(), mine]).then(mergeACB).then(addOwnPrivateCanvasesACB);
         const promise = loading.then(storeCanvasesACB);
         resolvePromise(promise, this.canvasesPromiseState);
-        promise.catch(loadFailedACB);
+        function doneACB(): void {}
+        return promise.then(doneACB, loadFailedACB);
 
-        // the shared canvases, plus the account's own (shared or private)
+        // the shared canvases, plus the account's own (shared or private); for the account's own shared
+        // canvases the copy from /mine is used, because only that one says which folder it is in
         function mergeACB(results: [Canvas[], Canvas[]]): LoadedList {
             const shared = results[0];
             const own = results[1];
             function toIdCB(canvas: Canvas): string { return canvas._id; }
+            function findOwn(id: string): Canvas | undefined {
+                function hasIdCB(other: Canvas): boolean { return other._id === id; }
+                return own.find(hasIdCB);
+            }
+            function preferOwnCB(canvas: Canvas): Canvas { return findOwn(canvas._id) || canvas; }
             function isNotSharedCB(canvas: Canvas): boolean {
                 function hasIdCB(other: Canvas): boolean { return other._id === canvas._id; }
                 return !shared.some(hasIdCB);
             }
-            return { canvases: shared.concat(own.filter(isNotSharedCB)), accountCanvasIds: own.map(toIdCB) };
+            return { canvases: shared.map(preferOwnCB).concat(own.filter(isNotSharedCB)), accountCanvasIds: own.map(toIdCB) };
         }
 
         // canvases made with an owner token that the account does not hold yet (a guest's, or not claimed yet):
@@ -136,6 +153,42 @@ export const galleryModel = {
         return error ? error.message : "";
     },
 
+    // Loading the folders (only an account has folders); resolves when it is done
+    loadFolders(): Promise<void> {
+        const model = this;
+        if (!this.isLoggedIn) {
+            resolvePromise(null, this.foldersPromiseState);     // nothing to load, no old error either
+            this.folders = [];
+            return Promise.resolve();
+        }
+        const promise = listFolders().then(storeFoldersACB);
+        resolvePromise(promise, this.foldersPromiseState);
+        function doneACB(): void {}
+        return promise.then(doneACB, loadFailedACB);
+
+        // an older request that finishes late must not overwrite a newer list
+        function isLatest(): boolean { return model.foldersPromiseState.promise === promise; }
+        function storeFoldersACB(folders: Folder[]): Folder[] {
+            if (isLatest()) {
+                model.folders = folders;
+                // the open folder may have been deleted in another tab
+                function isOpenFolderCB(folder: Folder): boolean { return folder.id === model.selectedFolderId; }
+                if (model.selectedFolderId && !folders.some(isOpenFolderCB)) model.selectedFolderId = null;
+            }
+            return folders;
+        }
+        function loadFailedACB(error: Error): void {
+            if (isLatest()) model.showToast("Could not load folders: " + error.message, "error");
+        }
+    },
+    isLoadingFolders(): boolean { return isPending(this.foldersPromiseState); },
+    getFoldersError(): string {
+        const error = this.foldersPromiseState.error;
+        return error ? error.message : "";
+    },
+    // folders are for accounts; a guest is asked to log in instead
+    canUseFolders(): boolean { return this.isLoggedIn; },
+
     // Joining
     setJoinCanvasIdDraft(text: string): void {
         this.joinCanvasIdDraft = text;
@@ -174,8 +227,7 @@ export const galleryModel = {
     getMyCanvases(): Canvas[] {
         const model = this;
         const folderId = this.selectedFolderId;
-        const canvasFolders = this.canvasFolders;
-        function isInFolderCB(canvas: Canvas): boolean { return model.isMine(canvas._id) && (!folderId || canvasFolders[canvas._id] === folderId); }
+        function isInFolderCB(canvas: Canvas): boolean { return model.isMine(canvas._id) && (!folderId || canvas.folderId === folderId); }
         return this.filterCanvases(this.canvases.filter(isInFolderCB), this.myWorkSearchText);
     },
 
@@ -195,8 +247,12 @@ export const galleryModel = {
     },
 
     // replaces one canvas in the list (and the open canvas, if it is that one) with the server's version
+    // GET /api/canvas/:id does not say which folder the canvas is in, so the folder it had is kept
     replaceCanvas(updated: Canvas): void {
-        function replaceCB(canvas: Canvas): Canvas { return canvas._id === updated._id ? updated : canvas; }
+        function replaceCB(canvas: Canvas): Canvas {
+            if (canvas._id !== updated._id) return canvas;
+            return { ...updated, folderId: updated.folderId === undefined ? canvas.folderId : updated.folderId };
+        }
         this.canvases = this.canvases.map(replaceCB);
         if (this.currentCanvas && this.currentCanvas._id === updated._id) this.currentCanvas = updated;
     },
@@ -258,7 +314,6 @@ export const galleryModel = {
         function isOtherCanvasCB(canvas: Canvas): boolean { return canvas._id !== canvasId; }
         function deletedACB(): void {
             model.canvases = model.canvases.filter(isOtherCanvasCB);
-            model.setCanvasFolder(canvasId, null);
             model.showToast("Deleted \"" + name + "\"", "success");
         }
         function failedACB(error: Error): void { model.showToast("Could not delete \"" + name + "\": " + error.message, "error"); }
@@ -266,11 +321,7 @@ export const galleryModel = {
     },
 
     // Folders
-    getMyFolders(): Folder[] {
-        const userId = this.user.id;
-        function isMineCB(folder: Folder): boolean { return folder.owner === userId; }
-        return this.folders.filter(isMineCB);
-    },
+    getMyFolders(): Folder[] { return this.folders; },      // the server only sends the account's own
 
     selectFolder(folderId: string | null): void { this.selectedFolderId = folderId; },
 
@@ -294,66 +345,112 @@ export const galleryModel = {
         return folder ? folder.name : "";
     },
 
-    // error message for a new folder name, empty if the name is fine
+    // error message for a new folder name (already trimmed), empty if the name is fine
+    // the same rules as the server, so a name it would refuse is not sent
     checkFolderName(name: string): string {
         if (!name) return "Please type a folder name";
-        function isSameNameCB(folder: Folder): boolean { return folder.name.toLowerCase() === name.toLowerCase(); }
+        if (Array.from(name).length > MAX_FOLDER_NAME) return "Folder name can be at most " + MAX_FOLDER_NAME + " characters";
+        function isSameNameCB(folder: Folder): boolean { return folder.name.trim().toLowerCase() === name.toLowerCase(); }
         if (this.getMyFolders().some(isSameNameCB)) return "\"" + name + "\" already exists";
         return "";
     },
 
-    // the input stays open with an error message if the name cannot be used
-    createFolder(): void {
+    // saved on the server first, then shown; the input stays open with an error message if it fails
+    createFolder(): Promise<void> {
+        if (this.creatingFolder) return Promise.resolve();      // ignore Enter pressed twice
+        const model = this;
         const name = this.newFolderName.trim();
         const error = this.checkFolderName(name);
         if (error) {
             this.newFolderError = error;
-            return;
+            return Promise.resolve();
         }
-        this.folders = [...this.folders, { id: crypto.randomUUID(), name: name, owner: this.user.id }];
-        this.cancelNewFolder();
-        this.showToast("Created folder \"" + name + "\"", "success");
+        this.creatingFolder = true;
+        return createFolderRequest(name).then(createdACB).catch(failedACB).finally(doneACB);
+
+        function createdACB(folder: Folder): void {
+            model.folders = [...model.folders, folder];
+            model.cancelNewFolder();
+            model.showToast("Created folder \"" + folder.name + "\"", "success");
+        }
+        // e.g. 409 when another tab created the same name first: the server's message is shown at the input
+        function failedACB(error: Error): void { model.newFolderError = error.message; }
+        function doneACB(): void { model.creatingFolder = false; }
     },
 
     // clicking away from an empty input just closes it, otherwise it counts as creating
     leaveNewFolder(): void {
+        if (this.creatingFolder) return;        // the blur that follows Enter while it saves
         if (this.newFolderName.trim()) this.createFolder();
         else this.cancelNewFolder();
     },
 
-    // the folder disappears, its canvases stay and are still shown in "All"
-    deleteFolder(folderId: string): void {
-        const name = this.getFolderName(folderId);
-        function isOtherFolderCB(folder: Folder): boolean { return folder.id !== folderId; }
-        function notInFolderCB(entry: [string, string]): boolean { return entry[1] !== folderId; }      // entry = [canvasId, folderId]
-        this.folders = this.folders.filter(isOtherFolderCB);
-        this.canvasFolders = Object.fromEntries(Object.entries(this.canvasFolders).filter(notInFolderCB));
-        if (this.selectedFolderId === folderId) this.selectedFolderId = null;
-        this.showToast("Deleted folder \"" + name + "\"", "success");
+    isFolderBusy(folderId: string): boolean { return this.busyFolderIds.includes(folderId); },
+    setFolderBusy(folderId: string, busy: boolean): void {
+        function isOtherCB(id: string): boolean { return id !== folderId; }
+        const others = this.busyFolderIds.filter(isOtherCB);
+        this.busyFolderIds = busy ? [...others, folderId] : others;
     },
 
-    // folderId null = the canvas is in no folder
-    setCanvasFolder(canvasId: string, folderId: string | null): void {
-        function isOtherCanvasCB(entry: [string, string]): boolean { return entry[0] !== canvasId; }     // entry = [canvasId, folderId]
-        const others = Object.fromEntries(Object.entries(this.canvasFolders).filter(isOtherCanvasCB));
-        this.canvasFolders = folderId ? { ...others, [canvasId]: folderId } : others;
+    // the folder disappears, its canvases stay and are shown in "All" (the server takes them out too)
+    deleteFolder(folderId: string): Promise<void> {
+        if (this.isFolderBusy(folderId)) return Promise.resolve();      // ignore double clicks
+        const model = this;
+        const name = this.getFolderName(folderId);
+        this.setFolderBusy(folderId, true);
+        return deleteFolderRequest(folderId).then(deletedACB).catch(failedACB).finally(doneACB);
+
+        function isOtherFolderCB(folder: Folder): boolean { return folder.id !== folderId; }
+        function takeOutCB(canvas: Canvas): Canvas { return canvas.folderId === folderId ? { ...canvas, folderId: null } : canvas; }
+        function deletedACB(): void {
+            model.folders = model.folders.filter(isOtherFolderCB);
+            model.canvases = model.canvases.map(takeOutCB);
+            if (model.selectedFolderId === folderId) model.selectedFolderId = null;
+            model.showToast("Deleted folder \"" + name + "\"", "success");
+        }
+        function failedACB(error: Error): void { model.showToast("Could not delete folder \"" + name + "\": " + error.message, "error"); }
+        function doneACB(): void { model.setFolderBusy(folderId, false); }
+    },
+
+    // sets the folder of one canvas in the list (null = no folder); only the frontend copy
+    setCanvasFolderLocally(canvasId: string, folderId: string | null): void {
+        function moveCB(canvas: Canvas): Canvas { return canvas._id === canvasId ? { ...canvas, folderId: folderId } : canvas; }
+        this.canvases = this.canvases.map(moveCB);
     },
 
     // folderId null = take the canvas out of its folder (dropped on "All")
-    moveCanvasToFolder(canvasId: string, folderId: string | null): void {
+    // shown at once, then saved; the old folder comes back if the server refuses
+    moveCanvasToFolder(canvasId: string, folderId: string | null): Promise<void> {
         const canvas = this.findCanvas(canvasId);
-        if (!canvas) return;
-
-        const currentFolderId = this.canvasFolders[canvasId] || null;
+        if (!canvas) return Promise.resolve();
+        const model = this;
+        const canvasName = canvas.name;     // kept for failedACB below, which runs later
+        const previousFolderId = canvas.folderId ?? null;
         const targetName = folderId ? this.getFolderName(folderId) : "All";
-        if (currentFolderId === folderId) {
+        if (previousFolderId === folderId) {
             this.showToast("\"" + canvas.name + "\" is already in " + targetName, "info");
-            return;
+            return Promise.resolve();
         }
 
-        this.setCanvasFolder(canvasId, folderId);
-        if (folderId) this.showToast("Moved to " + targetName, "success");
-        else this.showToast("Removed from folder", "success");
+        this.setCanvasFolderLocally(canvasId, folderId);
+        return setCanvasFolderRequest(canvasId, folderId).catch(claimAndRetryACB).then(movedACB).catch(failedACB);
+
+        // a canvas made before logging in is held by its owner token: it has to be claimed by the account first
+        function claimAndRetryACB(error: RequestError): Promise<unknown> {
+            if (error.status !== 403 || !isCanvasOwner(canvasId)) throw error;
+            function retryACB(): Promise<unknown> { return setCanvasFolderRequest(canvasId, folderId); }
+            return claimCanvas(canvasId).then(retryACB);
+        }
+        function movedACB(): void {
+            if (folderId) model.showToast("Moved to " + targetName, "success");
+            else model.showToast("Removed from folder", "success");
+        }
+        function failedACB(error: Error): void {
+            // only undo it if nothing else moved the canvas since
+            const now = model.findCanvas(canvasId);
+            if (now && (now.folderId ?? null) === folderId) model.setCanvasFolderLocally(canvasId, previousFolderId);
+            model.showToast("Could not move \"" + canvasName + "\": " + error.message, "error");
+        }
     },
 
     // Drag and drop highlight

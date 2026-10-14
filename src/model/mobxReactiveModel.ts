@@ -18,7 +18,7 @@ declare global {
 }
 
 // merge every part into one object, so methods can still use `this` across parts
-// (e.g. getMyFolders in galleryModel reads this.user from userModel, saveRename in openCanvasModel
+// (e.g. loadFolders in galleryModel reads this.isLoggedIn from userModel, saveRename in openCanvasModel
 //  calls this.saveCanvasChanges from galleryModel, and every part can call this.showToast from toastModel)
 const model = {
     ...userModel,

@@ -7,7 +7,7 @@ export function LogoView(props){
             {/* two overlapping shapes, like pieces of a collage */}
             <svg className="logo-mark" viewBox="0 0 40 40" aria-hidden="true">
                 <circle cx="16" cy="18" r="12" fill="#f4a261"/>
-                <polygon points="26,8 38,32 14,32" fill="#333" opacity="0.85"/>
+                <polygon points="26,8 38,32 14,32" fill="white" opacity="0.9"/>
             </svg>
             <span className="logo-text">Sketchspace</span>
         </button>

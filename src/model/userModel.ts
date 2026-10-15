@@ -1,5 +1,6 @@
 import { setTokenOwner, getOwnedCanvasIds, claimCanvas } from "/src/api/canvasSource.ts";
-import { register as registerRequest, login as loginRequest, logout as logoutRequest, getMe, updateMe } from "/src/api/authSource.ts";
+import { register as registerRequest, login as loginRequest, loginWithGoogle as googleRequest, logout as logoutRequest, getSession, updateMe } from "/src/api/authSource.ts";
+import { isGoogleConfigured, renderGoogleButton } from "/src/api/googleauthSource.ts";
 import { resolvePromise } from "/src/utils/resolvePromise.ts";
 import type { Model, ProfileField, ServerUser, User } from "./types.ts";
 
@@ -29,6 +30,7 @@ interface UserState {
     signingUp: boolean;
     loginError: string;         // why the last login / sign up failed, "" if it did not
     loggingIn: boolean;         // true while the request runs
+    googleEnabled: boolean;     // false without a Google client id: the login page then has no Google button
 
     // Profile
     editingField: ProfileField | null;      // field being edited, null = none
@@ -44,6 +46,7 @@ const initialState: UserState = {
     signingUp: false,
     loginError: "",
     loggingIn: false,
+    googleEnabled: isGoogleConfigured,
     editingField: null,
     profileDraft: "",
 };
@@ -63,10 +66,11 @@ export const userModel = {
     // called once when the app starts: a login cookie from an earlier visit may still be valid
     restoreSession(): Promise<void> {
         const model = this;
-        return getMe().then(loggedInACB).catch(notLoggedInACB);
+        return getSession().then(sessionACB).catch(failedACB);
 
-        function loggedInACB(serverUser: ServerUser): void { model.setLoggedInUser(serverUser); }
-        function notLoggedInACB(): void {}      // 401 = nobody logged in; anything else: stay a guest
+        // the server answers 200 for a guest too (user is null), so a first visit prints no error in the console
+        function sessionACB(serverUser: ServerUser | null): void { if (serverUser) model.setLoggedInUser(serverUser); }
+        function failedACB(): void {}       // the server could not be reached: stay a guest
     },
     setLoggedInUser(serverUser: ServerUser): void {
         this.user = toUser(serverUser);
@@ -164,8 +168,31 @@ export const userModel = {
         function failedACB(error: Error): void { model.showToast("Could not log out: " + error.message, "error"); }
         return logoutRequest().then(loggedOutACB).catch(failedACB);
     },
-    googleLogin(): void {
-        this.showToast("Google sign-in is not set up yet", "info");
+
+    // Google draws its own sign-in button inside element, and calls onCredential(idToken) when the user signs in
+    drawGoogleButton(element: HTMLElement, onCredential: (idToken: string) => void): void {
+        const model = this;
+        function failedACB(error: Error): void { model.loginError = error.message; }
+        renderGoogleButton(element, onCredential).catch(failedACB);
+    },
+
+    // idToken: what Google gave after the user picked an account; the server checks it with Google
+    // resolves to true when the user is logged in, otherwise loginError says why
+    loginWithGoogle(idToken: string): Promise<boolean> {
+        if (this.loggingIn) return Promise.resolve(false);
+        const model = this;
+        this.loggingIn = true;
+        this.loginError = "";
+        return googleRequest(idToken).then(loggedInACB).catch(failedACB).finally(doneACB);
+
+        function loggedInACB(serverUser: ServerUser): boolean {
+            model.setLoggedInUser(serverUser);
+            model.resetLiveConnection();
+            model.showToast("Welcome, " + model.user.name, "success");
+            return true;
+        }
+        function failedACB(error: Error): Promise<boolean> { return model.failLogin(error.message); }
+        function doneACB(): void { model.loggingIn = false; }
     },
 
     // Profile

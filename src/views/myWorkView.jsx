@@ -4,10 +4,6 @@ import { formatDate } from "/src/utils/formatDate.js";
 export function MyWorkView(props){
     return (
         <div className="page-content">
-            <button className="new-canvas-big" aria-label="New canvas" disabled={props.creating} onClick={props.onNewCanvas}>
-                {props.creating ? <div className="spinner" role="status" aria-label="Creating canvas"></div> : "+"}
-            </button>
-
             <input className="search-input" placeholder="Search" aria-label="Search canvases"
                    value={props.searchText} onChange={searchChangeACB}/>
 
@@ -34,9 +30,22 @@ export function MyWorkView(props){
                     <button className="small-button" onClick={props.onRetry}>Retry</button>
                 </div>
             );
-        if (props.canvases.length === 0) return <div className="empty-text">{emptyText()}</div>;
 
-        return <div className="card-list">{props.canvases.map(cardCB)}</div>;
+        return (
+            <>
+                <div className="card-list">
+                    <button className="card-new" aria-label="New canvas"
+                            disabled={props.creating} onClick={props.onNewCanvas}>
+                        {props.creating
+                            ? <div className="spinner spinner-small" role="status" aria-label="Creating canvas"></div>
+                            : <span className="card-new-icon">+</span>}
+                    </button>
+                    {props.canvases.map(cardCB)}
+                </div>
+                {props.canvases.length === 0 &&
+                    <div className="empty-text">{emptyText()}</div>}
+            </>
+        );
     }
 
     function emptyText(){

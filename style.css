@@ -314,12 +314,40 @@ button { font: inherit; cursor: pointer; }
     gap: 10px;
 }
 
-.shape-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; justify-items: center; }
-.shape { width: 100px; height: 100px; background: #d9d9d9; border: none; cursor: grab; transition: background 0.15s ease; }
-.shape:hover { background: #bbb; }
-.shape-triangle { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
-.shape-star { clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
-.shape-circle { border-radius: 50%; }
+.shape-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; justify-items: center; }
+
+/* Card wrapper — visible border and shadow, no clip-path */
+.shape-btn {
+    width: 100px;
+    height: 100px;
+    background: white;
+    border: 1.5px solid #e8e8e8;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.shape-btn:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+    border-color: #f4a261;
+    transform: translateY(-1px);
+}
+
+/* Coloured shape inside the card */
+.shape-icon {
+    display: block;
+    width: 52px;
+    height: 52px;
+    background: #f4a261;
+    transition: background 0.15s ease;
+}
+.shape-btn:hover .shape-icon { background: #e8924e; }
+.shape-icon-triangle { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.shape-icon-star { clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.shape-icon-circle { border-radius: 50%; }
+/* square needs no modifier — default rectangle */
 
 .shape-actions { display: flex; align-items: center; justify-content: center; gap: 10px; color: #777; }
 .shape-actions .small-button { padding: 6px 16px; }

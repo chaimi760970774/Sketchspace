@@ -49,9 +49,11 @@ export function ShapePanelView(props){
         // tell the canvas which shape is being dropped, e.g. "shape:star"
         function shapeDragStartACB(evt){ evt.dataTransfer.setData("text/plain", "shape:" + shape); }
 
-        return <button key={shape} className={"shape shape-" + shape}
+        return <button key={shape} className="shape-btn"
                        aria-label={"Add " + shape} title={"Click or drag to add a " + shape}
                        draggable="true" onDragStart={shapeDragStartACB}
-                       onClick={clickShapeACB}></button>;
+                       onClick={clickShapeACB}>
+            <span className={"shape-icon shape-icon-" + shape}></span>
+        </button>;
     }
 }

@@ -75,8 +75,17 @@ button { font: inherit; cursor: pointer; }
     font-size: 18px;
 }
 .login-google, .login-buttons { grid-column: 2; }
-.login-input { height: 60px; border: none; background: #eaeaea; padding: 0 12px; font-size: 16px; }
-.login-button { height: 60px; border: none; background: #eaeaea; font-size: 18px; }
+.login-input { height: 60px; border: 1.5px solid #ccc; border-radius: 8px; background: white; padding: 0 12px; font-size: 16px; }
+.login-button {
+    height: 56px;
+    border: 1.5px solid #ccc;
+    border-radius: 8px;
+    background: white;
+    font-size: 16px;
+    font-weight: 600;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+.login-button:hover { border-color: #999; background: #fafafa; }
 .login-buttons { display: flex; gap: 60px; }
 .login-buttons .login-button { flex: 1; }
 .google-g { color: #4285f4; font-weight: bold; margin-right: 8px; }
@@ -94,7 +103,18 @@ button { font: inherit; cursor: pointer; }
     gap: 30px;
 }
 .hero-title { font-size: 56px; margin: 0; }
-.outline-button { border: 1px solid #333; background: #eaeaea; padding: 4px 24px; font-size: 18px; }
+/* Primary button — main call to action on a page */
+.outline-button {
+    background: #f4a261;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    padding: 8px 28px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background 0.15s ease;
+}
+.outline-button:hover:not(:disabled) { background: #e8924e; }
 
 .search-input {
     width: 100%;
@@ -145,6 +165,7 @@ button { font: inherit; cursor: pointer; }
 .card-item[aria-busy="true"] { opacity: 0.6; }
 
 .outline-button:disabled, .new-canvas-big:disabled, .canvas-name:disabled { cursor: progress; opacity: 0.6; }
+.outline-button:disabled { cursor: not-allowed; }
 
 /* list could not be loaded */
 .load-error { display: flex; align-items: center; gap: 16px; color: #c0392b; margin: 20px 0; }
@@ -184,7 +205,18 @@ button { font: inherit; cursor: pointer; }
 .profile-field { display: flex; flex-direction: column; align-items: center; gap: 12px; font-size: 20px; }
 .profile-value { color: #777; }
 .profile-input { font-size: 18px; padding: 4px 8px; }
-.pill-button { border: none; border-radius: 30px; background: #d4d4d4; padding: 10px 40px; font-size: 20px; }
+/* Pill button — used in profile for save actions, same primary color as outline-button */
+.pill-button {
+    background: #f4a261;
+    border: none;
+    border-radius: 30px;
+    color: white;
+    padding: 10px 40px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background 0.15s ease;
+}
+.pill-button:hover:not(:disabled) { background: #e8924e; }
 .pill-button:disabled { opacity: 0.4; cursor: default; }
 
 
@@ -237,10 +269,21 @@ button { font: inherit; cursor: pointer; }
 /* a disabled button with a "Coming soon" note under it */
 .coming-soon-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .coming-soon { font-size: 11px; color: #888; }
-.small-button { border: none; border-radius: 8px; background: #d9d9d9; padding: 6px 28px; font-size: 18px; }
+/* Secondary button — supporting actions */
+.small-button {
+    background: white;
+    border: 1.5px solid #ccc;
+    border-radius: 8px;
+    color: #333;
+    padding: 6px 20px;
+    font-size: 15px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+.small-button:hover:not(:disabled) { border-color: #999; background: #fafafa; }
 .small-button:disabled { opacity: 0.4; cursor: default; }
-.danger-button { background: #f6d5d1; color: #a93226; }
-.danger-button:hover { background: #f0bdb6; }
+/* Danger variant — destructive actions */
+.danger-button { border-color: #e0b4b0; color: #a93226; background: #fdf0ef; }
+.danger-button:hover:not(:disabled) { border-color: #c0392b; background: #fce4e1; }
 .canvas-area {
     flex: 1;
     min-height: 500px;
@@ -256,7 +299,7 @@ button { font: inherit; cursor: pointer; }
 .konva-stage.erasing {
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='10' cy='10' r='10' fill='%23808080' fill-opacity='0.5'/%3E%3C/svg%3E") 10 10, cell;
 }
-.small-button[aria-pressed="true"] { background: #aaa; }
+.small-button[aria-pressed="true"] { background: #fde8d7; border-color: #f4a261; color: #b05a1e; }
 
 /* canvas name and stroke save status in the topbar */
 .canvas-title-group { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -354,7 +397,16 @@ button { font: inherit; cursor: pointer; }
 .selected-photo { width: 100%; height: 100px; object-fit: cover; border-radius: 16px; }
 .photo-credit { font-size: 12px; color: #777; text-align: center; margin-top: -20px; }
 
-.text-button { background: none; border: none; font-size: 18px; }
+.text-button {
+    background: none;
+    border: none;
+    font-size: 15px;
+    color: #555;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.15s ease;
+}
+.text-button:hover { color: #f4a261; }
 .selected-photo { cursor: grab; }
 
 /* ========== My Work folder tabs ========== */

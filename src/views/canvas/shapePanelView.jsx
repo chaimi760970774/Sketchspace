@@ -28,7 +28,7 @@ export function ShapePanelView(props){
                     <img className="selected-photo" src={props.selectedPhoto.url}
                          draggable="true" onDragStart={photoDragStartACB}
                          title="Drag into the canvas"/>}
-                <button className="text-button" onClick={props.onUploadPhoto}>Upload a photo</button>
+                <button className="text-button" onClick={props.onUploadPhoto}>Find photos on Unsplash</button>
             </div>
             {props.selectedPhoto &&
                 <div className="photo-credit">

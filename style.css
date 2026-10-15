@@ -105,14 +105,30 @@ button { font: inherit; cursor: pointer; }
 /* ========== Gallery / My Work ========== */
 .hero {
     height: 360px;
-    background: #e0e0e0;
+    background: linear-gradient(160deg, #f9b78a 0%, #f4a261 55%, #e07a35 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 30px;
+    color: white;
 }
-.hero-title { font-size: 56px; margin: 0; }
+.hero-title {
+    font-size: 52px;
+    margin: 0;
+    font-weight: 700;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* the CTA button sits on orange, so invert it: white fill, orange text */
+.hero .outline-button {
+    background: white;
+    color: #c9601a;
+    font-weight: 700;
+}
+.hero .outline-button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.88);
+}
 /* Primary button — main call to action on a page */
 .outline-button {
     background: #f4a261;

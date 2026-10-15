@@ -1,5 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 * { box-sizing: border-box; }
-body { margin: 0; font-family: Arial, sans-serif; background: #f5f5f5; }
+body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; font-size: 15px; color: #1a1a1a; background: #f5f5f5; }
 button { font: inherit; cursor: pointer; }
 
 
@@ -85,11 +87,11 @@ button { font: inherit; cursor: pointer; }
 .login-form {
     display: grid;
     grid-template-columns: 140px 1fr;
-    gap: 30px 0;
+    gap: 24px 0;
     align-items: center;
     width: 100%;
     max-width: 640px;
-    font-size: 18px;
+    font-size: 15px;
 }
 .login-google, .login-buttons { grid-column: 2; }
 .login-input {
@@ -172,6 +174,7 @@ button { font: inherit; cursor: pointer; }
 }
 .search-input:focus { border-color: #f4a261; box-shadow: 0 0 0 3px rgba(244, 162, 97, 0.15); }
 .toolbar-row { display: flex; justify-content: space-between; align-items: center; margin: 24px 0; }
+.toolbar-title { font-size: 18px; font-weight: 700; color: #1a1a1a; }
 .category-list { display: flex; gap: 40px; }
 .category-item { background: none; border: none; font-size: 20px; font-style: italic; }
 .category-item.active { font-weight: bold; text-decoration: underline; }
@@ -257,8 +260,9 @@ button { font: inherit; cursor: pointer; }
     border-bottom: 3px solid #ccc;
 }
 .profile-avatar { width: 140px; height: 140px; border-radius: 50%; background: white; object-fit: cover; }
-.profile-name { flex: 1; font-size: 22px; }
-.upload-label { font-size: 22px; cursor: pointer; }
+.profile-name { flex: 1; font-size: 18px; font-weight: 600; }
+.upload-label { font-size: 14px; color: #666; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.upload-label:hover { color: #f4a261; }
 .upload-label input { display: none; }
 .profile-row {
     display: flex;
@@ -267,8 +271,9 @@ button { font: inherit; cursor: pointer; }
     padding: 30px 90px;
     border-bottom: 3px solid #ccc;
 }
-.profile-field { display: flex; flex-direction: column; align-items: center; gap: 12px; font-size: 20px; }
-.profile-value { color: #777; }
+.profile-field { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.profile-field > div:first-child { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #999; }
+.profile-value { font-size: 16px; color: #333; }
 .profile-input {
     font-size: 16px;
     padding: 6px 10px;
@@ -296,12 +301,13 @@ button { font: inherit; cursor: pointer; }
 /* ========== Canvas ========== */
 .tool-panel { width: 290px; padding: 24px; display: flex; flex-direction: column; gap: 30px; }
 .panel-box {
-    background: #eaeaea;
+    background: #f5f5f5;
     border: none;
-    border-radius: 30px;
-    padding: 30px 20px;
+    border-radius: 16px;
+    padding: 20px 16px;
     text-align: center;
-    font-size: 18px;
+    font-size: 14px;
+    color: #555;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -411,13 +417,14 @@ button { font: inherit; cursor: pointer; }
     justify-content: center;
     gap: 16px;
     background: white;
-    font-size: 18px;
+    font-size: 15px;
+    color: #555;
 }
 .canvas-status h2 { margin: 0; }
 .canvas-status-buttons { display: flex; gap: 16px; }
 
 
-.panel-label { font-size: 16px; margin-bottom: -18px; }
+.panel-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #999; margin-bottom: -18px; }
 .stroke-type-list { display: flex; gap: 16px; }
 .stroke-type {
     flex: 1;
@@ -454,7 +461,7 @@ button { font: inherit; cursor: pointer; }
     border-radius: 24px;
     padding: 24px 30px;
 }
-.modal-header { display: flex; justify-content: space-between; align-items: center; font-size: 20px; margin-bottom: 16px; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; font-size: 17px; font-weight: 600; margin-bottom: 16px; }
 .photo-search-form { display: flex; gap: 12px; margin-bottom: 12px; }
 .photo-filters { display: flex; gap: 12px; margin-bottom: 20px; }
 .photo-filters select { font: inherit; font-size: 16px; padding: 4px 8px; }

@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite';
 import reactJsxPlugin from '@vitejs/plugin-react';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+    // GitHub Pages serves the site from /Sketchspace/; local dev stays at /
+    base: command === 'build' ? '/Sketchspace/' : '/',
     plugins: [
         reactJsxPlugin(),
     ],
@@ -12,4 +14,4 @@ export default defineConfig({
         sourcemap: true,
         minify: false
     }
-});
+}));

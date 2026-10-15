@@ -162,37 +162,45 @@ button { font: inherit; cursor: pointer; }
 .category-bar { display: flex; gap: 40px; background: #d9d9d9; padding: 8px 24px; margin: 30px 0; }
 .category-bar .category-item { font-style: normal; }
 
-.card-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 30px; }
+.card-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 24px; }
 .card-item {
     position: relative;         /* the delete button and the spinner sit in its corners */
     height: 220px;
-    border: 1px solid #333;
-    background: #eaeaea;
+    border: none;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.06);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 8px;
     padding: 12px;
-    font-size: 18px;
+    font-size: 16px;
     text-align: center;
     cursor: pointer;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
-.card-name { overflow-wrap: anywhere; }
-.card-date { font-size: 13px; color: #777; }
+.card-item:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.11), 0 0 0 1px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
+}
+.card-name { overflow-wrap: anywhere; font-weight: 600; }
+.card-date { font-size: 13px; color: #999; }
 .card-delete {
     position: absolute;
     top: 6px;
     right: 8px;
     background: none;
     border: none;
-    font-size: 22px;
-    color: #777;
+    font-size: 20px;
+    color: #bbb;
+    transition: color 0.15s ease;
 }
 .card-delete:hover { color: #c0392b; }
 .card-share { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
 .card-item .spinner-small { position: absolute; top: 10px; left: 10px; }
-.card-item[aria-busy="true"] { opacity: 0.6; }
+.card-item[aria-busy="true"] { opacity: 0.6; pointer-events: none; transform: none; }
 
 .outline-button:disabled, .new-canvas-big:disabled, .canvas-name:disabled { cursor: progress; opacity: 0.6; }
 .outline-button:disabled { cursor: not-allowed; }

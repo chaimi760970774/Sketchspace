@@ -38,7 +38,11 @@ Don't have a key yet? Log in at [unsplash.com/developers](https://unsplash.com/d
 
 Please use your own key rather than sharing one. A demo key only gets 50 requests per hour, and that limit is shared by everyone using it.
 
-**3. Start the app**
+**3. Add your Google OAuth key**
+
+To set it up, create an OAuth client of type **Web application** in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), add the frontend's address (`http://localhost:8080` and `http://localhost`) under **Authorized JavaScript origins**, and put the client id in `GOOGLE_CLIENT_ID` (and `JWT_SECRET`) in the backend's `.env` **and** in the frontend's `VITE_GOOGLE_CLIENT_ID`. They must be the same value. Restart the server after changing `.env`. Without this, the google auth button will not be visible in the login page.
+
+**4. Start the app**
 
 ```bash
 npm run dev
@@ -59,6 +63,7 @@ If you change `.env` later, stop the app and run `npm run dev` again, otherwise 
 | `#/canvas` | Start a new canvas |
 | `#/canvas/:canvasId` | Open an existing canvas |
 
+
 ## How the code is organised
 
 We use Model-View-Presenter (MVP). In short:
@@ -70,10 +75,10 @@ We use Model-View-Presenter (MVP). In short:
 ```
 src/
 ├── model/
-│   ├── mobxReactiveModel.js   puts the three parts below together into one model
-│   ├── userModel.js           user, login, profile
-│   ├── galleryModel.js        canvas list, search, folders
-│   └── canvasModel.js         what's on the canvas, tools, photo search
+│   ├── mobxReactiveModel.ts   puts the three parts below together into one model
+│   ├── userModel.ts           user, login, profile
+│   ├── galleryModel.ts        canvas list, search, folders
+│   └── canvasModel.ts         what's on the canvas, tools, photo search
 ├── reactjs/                   presenters, one per page
 ├── views/                     views, one per page
 │   └── canvas/                views for the canvas page

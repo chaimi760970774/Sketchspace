@@ -613,6 +613,10 @@ button { font: inherit; cursor: pointer; }
 /* ========== Form errors ========== */
 .field-error { color: #c0392b; font-size: 14px; }
 .folder-bar .field-error { flex-shrink: 0; }
+.folder-hint { color: #777; font-size: 14px; }
+.folder-load-error { margin: 0; font-size: 14px; }
+.folder-spinner { margin-left: 8px; vertical-align: middle; }
+.folder-name-input[readonly] { opacity: 0.6; }
 
 
 /* ========== Toast ========== */
@@ -654,3 +658,6 @@ button { font: inherit; cursor: pointer; }
 .share-id-row { display: flex; gap: 12px; align-items: center; }
 .share-id-row .search-input { font-family: monospace; font-size: 16px; }
 .share-private-row { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+
+/* ========== Login errors ========== */
+.login-error { grid-column: 2; }

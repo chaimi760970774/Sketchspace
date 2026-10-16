@@ -1,7 +1,8 @@
-import { setTokenOwner, getOwnedCanvasIds, claimCanvas } from "/src/api/canvasSource.ts";
-import { register as registerRequest, login as loginRequest, logout as logoutRequest, getMe, updateMe, updateAvatar } from "/src/api/authSource.ts";
-import { resizeAvatar } from "/src/utils/resizeAvatar.ts";
+import { API_URL, setTokenOwner, getOwnedCanvasIds, claimCanvas } from "/src/api/canvasSource.ts";
+import { register as registerRequest, login as loginRequest, loginWithGoogle as googleRequest, logout as logoutRequest, getSession, updateMe, uploadAvatar, deleteAvatar, deleteMe } from "/src/api/authSource.ts";
+import { isGoogleConfigured, renderGoogleButton } from "/src/api/googleauthSource.ts";
 import { resolvePromise } from "/src/utils/resolvePromise.ts";
+import { resizeToSquare } from "/src/utils/resizeImage.ts";
 import type { Model, ProfileField, ServerUser, User } from "./types.ts";
 
 // simple check: something@something.something
@@ -11,11 +12,23 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DISPLAY_NAME_PATTERN = /^[\p{L}\p{N} _.-]{2,30}$/u;
 
 // someone who is not logged in: canvases are owned through this browser's owner tokens
-const GUEST: User = { id: "guest", name: "Guest", email: "", photoURL: null };
+const GUEST: User = { id: "guest", name: "Guest", email: "", photoURL: null, hasCustomPhoto: false };
+
+// pictures uploaded here: what the server accepts (it checks the file itself too)
+const PHOTO_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024;     // of the file chosen; what is sent is resized and far smaller
+const PHOTO_SIZE = 256;                        // pixels: every profile photo is made PHOTO_SIZE x PHOTO_SIZE
+
+// An uploaded picture is a path on the server ("/uploads/avatars/..."), so it needs the server's address to load
+// from the page. A Google picture is already a full https link.
+function toPhotoURL(avatarUrl: string | null | undefined): string | null {
+    if (!avatarUrl) return null;
+    return avatarUrl.startsWith("/") ? API_URL + avatarUrl : avatarUrl;
+}
 
 // the server's user, in the shape the pages use
 function toUser(serverUser: ServerUser): User {
-    return { id: serverUser.id, name: serverUser.displayName, email: serverUser.email, photoURL: serverUser.avatarUrl || null };
+    return { id: serverUser.id, name: serverUser.displayName, email: serverUser.email, photoURL: toPhotoURL(serverUser.avatarUrl), hasCustomPhoto: Boolean(serverUser.hasCustomAvatar) };
 }
 
 interface UserState {
@@ -30,6 +43,7 @@ interface UserState {
     signingUp: boolean;
     loginError: string;         // why the last login / sign up failed, "" if it did not
     loggingIn: boolean;         // true while the request runs
+    googleEnabled: boolean;     // false without a Google client id: the login page then has no Google button
 
     // Profile
     editingField: ProfileField | null;      // field being edited, null = none
@@ -46,6 +60,7 @@ const initialState: UserState = {
     signingUp: false,
     loginError: "",
     loggingIn: false,
+    googleEnabled: isGoogleConfigured,
     editingField: null,
     profileDraft: "",
     savingPhoto: false,
@@ -63,13 +78,14 @@ export const userModel = {
     // ========== Methods ==========
 
     // Session
-    // called once when the app starts: a login cookie from an earlier visit may still be valid
+    // called once when the app starts: a login from an earlier visit may still be valid
     restoreSession(): Promise<void> {
         const model = this;
-        return getMe().then(loggedInACB).catch(notLoggedInACB);
+        return getSession().then(sessionACB).catch(failedACB);
 
-        function loggedInACB(serverUser: ServerUser): void { model.setLoggedInUser(serverUser); }
-        function notLoggedInACB(): void {}      // 401 = nobody logged in; anything else: stay a guest
+        // the server answers 200 for a guest too (user is null), so a first visit prints no error in the console
+        function sessionACB(serverUser: ServerUser | null): void { if (serverUser) model.setLoggedInUser(serverUser); }
+        function failedACB(): void {}       // the server could not be reached: stay a guest
     },
     setLoggedInUser(serverUser: ServerUser): void {
         this.user = toUser(serverUser);
@@ -167,8 +183,31 @@ export const userModel = {
         function failedACB(error: Error): void { model.showToast("Could not log out: " + error.message, "error"); }
         return logoutRequest().then(loggedOutACB).catch(failedACB);
     },
-    googleLogin(): void {
-        this.showToast("Google sign-in is not set up yet", "info");
+
+    // Google draws its own sign-in button inside element, and calls onCredential(idToken) when the user signs in
+    drawGoogleButton(element: HTMLElement, onCredential: (idToken: string) => void): void {
+        const model = this;
+        function failedACB(error: Error): void { model.loginError = error.message; }
+        renderGoogleButton(element, onCredential).catch(failedACB);
+    },
+
+    // idToken: what Google gave after the user picked an account; the server checks it with Google
+    // resolves to true when the user is logged in, otherwise loginError says why
+    loginWithGoogle(idToken: string): Promise<boolean> {
+        if (this.loggingIn) return Promise.resolve(false);
+        const model = this;
+        this.loggingIn = true;
+        this.loginError = "";
+        return googleRequest(idToken).then(loggedInACB).catch(failedACB).finally(doneACB);
+
+        function loggedInACB(serverUser: ServerUser): boolean {
+            model.setLoggedInUser(serverUser);
+            model.resetLiveConnection();
+            model.showToast("Welcome, " + model.user.name, "success");
+            return true;
+        }
+        function failedACB(error: Error): Promise<boolean> { return model.failLogin(error.message); }
+        function doneACB(): void { model.loggingIn = false; }
     },
 
     // Profile
@@ -210,58 +249,62 @@ export const userModel = {
         }
         function failedACB(error: Error): void { model.showToast("Could not save the name: " + error.message, "error"); }
     },
-    setPhotoURL(url: string | null): void {
-        this.user = { ...this.user, photoURL: url };
+    setUserPhoto(serverUser: ServerUser): void {
+        this.user = { ...this.user, photoURL: toPhotoURL(serverUser.avatarUrl), hasCustomPhoto: Boolean(serverUser.hasCustomAvatar) };
     },
 
-    // shrinks the image to a 256x256 JPEG and saves it on the server; the new photo shows right away
-    // and the old one comes back if saving fails
+    // the picture is saved on the server, so it is still there after a refresh or on another device
     uploadPhoto(file: File): Promise<void> {
-        if (!this.isLoggedIn || this.savingPhoto) return Promise.resolve();
-        if (!file.type.startsWith("image/")) {
-            this.showToast("Please choose an image file", "error");
+        if (!this.isLoggedIn) {
+            this.showToast("Log in to save a profile photo", "info");
+            return Promise.resolve();
+        }
+        if (!PHOTO_TYPES.includes(file.type)) {
+            this.showToast("Please choose a PNG, JPEG or WebP image", "error");
+            return Promise.resolve();
+        }
+        if (file.size > MAX_PHOTO_BYTES) {
+            this.showToast("The image is too large, 10 MB at most", "error");
             return Promise.resolve();
         }
         const model = this;
-        const userId = this.user.id;
-        const oldURL = this.user.photoURL;
-        this.savingPhoto = true;
-        return resizeAvatar(file).then(resizedACB).then(savedACB).catch(failedACB).finally(doneACB);
+        return resizeToSquare(file, PHOTO_SIZE).then(uploadAvatar).then(savedACB).catch(failedACB);
 
-        function resizedACB(dataUrl: string): Promise<ServerUser> {
-            model.setPhotoURL(dataUrl);
-            return updateAvatar(dataUrl);
-        }
-        // the user may have logged out while the photo was saving: then there is nothing to update
         function savedACB(serverUser: ServerUser): void {
-            if (model.user.id !== userId) return;
-            model.setPhotoURL(toUser(serverUser).photoURL);
+            model.setUserPhoto(serverUser);
             model.showToast("Profile photo updated", "success");
         }
-        function failedACB(error: Error): void {
-            if (model.user.id !== userId) return;
-            model.setPhotoURL(oldURL);
-            model.showToast("Could not save the photo: " + error.message, "error");
-        }
-        function doneACB(): void { model.savingPhoto = false; }
+        function failedACB(error: Error): void { model.showToast("Could not upload the photo: " + error.message, "error"); }
     },
 
-    removePhoto(): Promise<void> {
-        if (!this.isLoggedIn || this.savingPhoto || !this.user.photoURL) return Promise.resolve();
+    deletePhoto(): Promise<void> {
+        if (!this.isLoggedIn || !this.user.hasCustomPhoto) return Promise.resolve();
         const model = this;
-        const userId = this.user.id;
-        this.savingPhoto = true;
-        return updateAvatar(null).then(removedACB).catch(failedACB).finally(doneACB);
+        return deleteAvatar().then(deletedACB).catch(failedACB);
 
-        function removedACB(serverUser: ServerUser): void {
-            if (model.user.id !== userId) return;
-            model.setPhotoURL(toUser(serverUser).photoURL);
+        function deletedACB(serverUser: ServerUser): void {
+            model.setUserPhoto(serverUser);
             model.showToast("Profile photo removed", "success");
         }
-        function failedACB(error: Error): void {
-            if (model.user.id !== userId) return;
-            model.showToast("Could not remove the photo: " + error.message, "error");
-        }
-        function doneACB(): void { model.savingPhoto = false; }
+        function failedACB(error: Error): void { model.showToast("Could not remove the photo: " + error.message, "error"); }
     },
+
+    // deletes the account on the server (with its canvases and folders) and goes back to being a guest
+    deleteAccount(): Promise<boolean> {
+        if (!this.isLoggedIn) return Promise.resolve(false);
+        const model = this;
+        return deleteMe().then(deletedACB).catch(failedACB);
+
+        function deletedACB(): boolean {
+            model.setGuest();
+            model.resetLiveConnection();
+            model.showToast("Your account was deleted", "success");
+            return true;
+        }
+        function failedACB(error: Error): boolean {
+            model.showToast("Could not delete the account: " + error.message, "error");
+            return false;
+        }
+    },
+
 } satisfies ThisType<Model>;    // inside the methods, `this` is the whole merged model

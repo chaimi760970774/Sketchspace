@@ -1,6 +1,7 @@
 import "/style.css"
 import type { ChangeEvent } from "react";
 import type { ProfileField, User } from "/src/model/types.ts";
+import { DefaultAvatar } from "/src/views/defaultAvatarView.tsx";
 
 interface ProfileViewProps {
     user: User;
@@ -14,7 +15,8 @@ interface ProfileViewProps {
     onDraftChange: (text: string) => void;
     onSave: () => void;
     onPhotoUpload: (file: File) => void;
-    onPhotoRemove: () => void;
+    onPhotoDelete: () => void;
+    onDeleteAccount: () => void;
     onLogin: () => void;
     onLogout: () => void;
 }
@@ -34,41 +36,45 @@ export function ProfileView(props: ProfileViewProps){
     return (
         <div className="profile-card">
             <div className="profile-header">
-                <div className="profile-avatar-box">
-                    {props.user.photoURL
-                        ? <img className="profile-avatar" src={props.user.photoURL} alt="Profile photo"/>
-                        : <div className="profile-avatar"></div>}
-                    {props.savingPhoto && <div className="spinner profile-avatar-spinner" role="status" aria-label="Saving photo"></div>}
-                </div>
+                {props.user.photoURL
+                    ? <img className="profile-avatar" src={props.user.photoURL} alt="Profile photo" referrerPolicy="no-referrer"/>
+                    : <DefaultAvatar/>}
 
                 <div className="profile-name">{props.user.name}</div>
 
-                {props.isLoggedIn
-                    ? <div className="profile-photo-actions">
-                          <label className={props.savingPhoto ? "upload-label disabled" : "upload-label"}>
-                              Upload photo
-                              <input type="file" accept="image/*" disabled={props.savingPhoto} onChange={photoChangeACB}/>
-                          </label>
-                          {props.user.photoURL &&
-                              <button className="pill-button" disabled={props.savingPhoto} onClick={props.onPhotoRemove}>Remove photo</button>}
-                      </div>
-                    : <div className="profile-value">Log in to upload a profile photo</div>}
+                {props.isLoggedIn && <label className="upload-label">
+                    Upload photo
+                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={photoChangeACB}/>
+                </label>}
+
+                {props.isLoggedIn && props.user.hasCustomPhoto
+                    && <button className="pill-button" onClick={clickDeletePhotoACB}>Remove photo</button>}
             </div>
 
             {fields.map(fieldRowCB)}
 
-            {props.isLoggedIn
-                ? <button className="pill-button" onClick={props.onLogout}>Log out</button>
-                : <button className="pill-button" onClick={props.onLogin}>Log in or sign up</button>}
+            <div className="profile-actions">
+                {props.isLoggedIn
+                    ? <button className="pill-button" onClick={props.onLogout}>Log out</button>
+                    : <button className="pill-button" onClick={props.onLogin}>Log in or sign up</button>}
+
+                {props.isLoggedIn && <button className="pill-button danger-button" onClick={clickDeleteAccountACB}>Delete account</button>}
+            </div>
         </div>
     );
 
     function photoChangeACB(evt: ChangeEvent<HTMLInputElement>){
         const file = evt.target.files?.[0];
-        // clear the input so picking the same file again (e.g. after an error) still fires onChange;
-        // the file input can only be reset by changing its value
-        evt.target.value = "";
+        evt.target.value = "";      // so choosing the same file again still counts as a change
         if (file) props.onPhotoUpload(file);
+    }
+
+    function clickDeletePhotoACB(){
+        if (window.confirm("Remove your uploaded photo?")) props.onPhotoDelete();
+    }
+
+    function clickDeleteAccountACB(){
+        if (window.confirm("Delete your account? Your canvases and folders are deleted too. This cannot be undone.")) props.onDeleteAccount();
     }
 
     function fieldRowCB(field: FieldRow){

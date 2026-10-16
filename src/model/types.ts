@@ -162,6 +162,7 @@ export interface User {
     name: string;
     email: string;
     photoURL: string | null;
+    hasCustomPhoto: boolean;    // true when the user uploaded the photo (then it can be removed)
 }
 
 // a user as the server sends it
@@ -170,6 +171,7 @@ export interface ServerUser {
     email: string;
     displayName: string;
     avatarUrl?: string | null;
+    hasCustomAvatar?: boolean;
     createdAt?: string;
 }
 

@@ -190,6 +190,8 @@ button { font: inherit; cursor: pointer; }
 .profile-input { font-size: 18px; padding: 4px 8px; }
 .pill-button { border: none; border-radius: 30px; background: #d4d4d4; padding: 10px 40px; font-size: 20px; }
 .pill-button:disabled { opacity: 0.4; cursor: default; }
+.profile-actions { display: flex; justify-content: center; gap: 20px; margin-top: 40px; }
+.danger-button { background: #e8b4b4; color: #7a1010; }
 
 
 /* ========== Canvas ========== */

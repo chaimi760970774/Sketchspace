@@ -20,7 +20,8 @@ const Profile = observer(// observer needed for the presenter to update (its vie
                             onDraftChange={handlerDraftChangeACB}
                             onSave={handlerSaveACB}
                             onPhotoUpload={handlerPhotoUploadACB}
-                            onPhotoRemove={handlerPhotoRemoveACB}
+                            onPhotoDelete={handlerPhotoDeleteACB}
+                            onDeleteAccount={handlerDeleteAccountACB}
                             onLogin={handlerLoginACB}
                             onLogout={handlerLogoutACB}/>;
 
@@ -29,7 +30,11 @@ const Profile = observer(// observer needed for the presenter to update (its vie
         function handlerSaveACB(){ props.model.saveEdit(); }
 
         function handlerPhotoUploadACB(file: File){ props.model.uploadPhoto(file); }
-        function handlerPhotoRemoveACB(){ props.model.removePhoto(); }
+        function handlerPhotoDeleteACB(){ props.model.deletePhoto(); }
+        function handlerDeleteAccountACB(){
+            props.model.deleteAccount().then(deletedACB);
+            function deletedACB(deleted: boolean){ if (deleted) navigate("/login"); }
+        }
 
         function handlerLoginACB(){ navigate("/login"); }
         function handlerLogoutACB(){ props.model.logoutUser().then(() => navigate("/login")); }

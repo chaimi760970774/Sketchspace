@@ -1,5 +1,5 @@
 import "/style.css"
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent, FormEvent, RefObject } from "react";
 
 interface LoginViewProps {
     email: string;
@@ -8,11 +8,12 @@ interface LoginViewProps {
     signingUp: boolean;
     error: string;
     busy: boolean;
+    googleEnabled: boolean;                         // false: no Google client id, so no Google button
+    googleSlotRef: RefObject<HTMLDivElement | null>;   // Google draws its own button in here
     onEmailChange: (email: string) => void;
     onPasswordChange: (password: string) => void;
     onNameChange: (name: string) => void;
     onLogin: () => void;
-    onGoogleLogin: () => void;
     onGuestLogin: () => void;
     onToggleSignUp: () => void;
 }
@@ -25,9 +26,7 @@ export function LoginView(props: LoginViewProps){
 
             {/* a real form, so the browser knows the password field belongs to it and Enter logs in */}
             <form className="login-form" onSubmit={submitACB}>
-                <button type="button" className="login-button login-google" onClick={props.onGoogleLogin}>
-                    <span className="google-g">G</span> Log in with Google
-                </button>
+                {props.googleEnabled && <div className="login-google" ref={props.googleSlotRef}></div>}
 
                 {props.signingUp &&
                     <>

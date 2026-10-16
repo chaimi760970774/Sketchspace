@@ -76,7 +76,7 @@ export const userModel = {
     // ========== Methods ==========
 
     // Session
-    // called once when the app starts: a login cookie from an earlier visit may still be valid
+    // called once when the app starts: a login from an earlier visit may still be valid
     restoreSession(): Promise<void> {
         const model = this;
         return getSession().then(sessionACB).catch(failedACB);

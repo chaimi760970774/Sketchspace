@@ -3,7 +3,9 @@ import type { Canvas, CanvasChanges, ElementChanges, ElementServerFields, NewStr
 // All requests to the Sketchspace server (REST). Every function returns a promise;
 // if the server answers with an error, the promise rejects with an ApiError carrying its message.
 
-export const API_URL: string = import.meta.env.VITE_API_URL || "http://localhost:3000";
+// The server's address comes from .env.development / .env.production (VITE_API_URL) and is read only here.
+// It is built into the app when it is built, so it has to be set before `npm run build`.
+export const API_URL: string = import.meta.env.VITE_API_URL ?? "";
 
 // an error from the server; status is the HTTP status (0 = the server could not be reached)
 // hasServerMessage is true when the server explained the error itself ({ error: "..." });
@@ -24,11 +26,32 @@ interface OkResponse {
     ok: boolean;
 }
 
+// ========== Login token ==========
+// The app and the server can be on different sites (GitHub Pages and the server's own address), and browsers do not
+// send a cookie between sites. So the login token that register and login return is kept here and sent as
+// "Authorization: Bearer <token>" with every request, and with the socket connection.
+
+const LOGIN_TOKEN_KEY = "sketchspace_token";
+
+export function getLoginToken(): string | null {
+    try { return localStorage.getItem(LOGIN_TOKEN_KEY); } catch (error) { return null; }      // storage blocked: not logged in
+}
+// null forgets it (logging out)
+export function setLoginToken(token: string | null): void {
+    try {
+        if (token) localStorage.setItem(LOGIN_TOKEN_KEY, token);
+        else localStorage.removeItem(LOGIN_TOKEN_KEY);
+    } catch (error) { /* storage blocked */ }
+}
+
 // sends one request and returns the JSON answer
-// credentials: "include" sends the login cookie to the server (another origin), which has to allow this origin
 // T is the shape the server documents for this request: JSON has no types at runtime, so it is trusted, not checked
 export function request<T>(path: string, options?: RequestInit): Promise<T> {
-    return fetch(API_URL + path, { credentials: "include", ...options }).then(gotResponseACB, networkErrorACB);
+    if (!API_URL) return Promise.reject(new ApiError("The server address is not set (VITE_API_URL)", 0, false));
+    const headers = new Headers(options?.headers);
+    const loginToken = getLoginToken();
+    if (loginToken && !headers.has("Authorization")) headers.set("Authorization", "Bearer " + loginToken);
+    return fetch(API_URL + path, { ...options, headers: headers }).then(gotResponseACB, networkErrorACB);
 
     function networkErrorACB(): never {
         throw new ApiError("Cannot reach the server, please check that it is running", 0, false);

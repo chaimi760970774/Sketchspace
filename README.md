@@ -50,7 +50,24 @@ npm run dev
 
 Then open the link that shows up in the terminal (usually http://localhost:8080).
 
-If you change `.env` later, stop the app and run `npm run dev` again, otherwise it won't pick up the change.
+If you change `.env` (or `.env.development`) later, stop the app and run `npm run dev` again, otherwise it won't pick up the change.
+
+## Connecting to the server
+
+The server's address is `VITE_API_URL`, set in two committed files (only a public address belongs there, never a secret):
+
+| File | Used by | Value |
+| --- | --- | --- |
+| `.env.development` | `npm run dev` | `http://localhost:3000` |
+| `.env.production` | `npm run build` (the deployed site) | `https://91-98-226-226.sslip.io` |
+
+The address is built into the app, so rebuild after changing it. Do not set `VITE_API_URL` in the deploy workflow: an empty value there overrides `.env.production`.
+
+**Login.** The site (GitHub Pages) and the server are on different sites, and browsers do not send cookies between sites. So register and login return a token, the app keeps it in `localStorage` (`sketchspace_token`), and sends it as `Authorization: Bearer <token>` with every request and in the socket connection (`io(url, { auth })`). Logging out just forgets the token. Canvases still use their own owner token (`X-Owner-Token`) for guests.
+
+The server must list the site's exact origin in `CLIENT_ORIGIN` (for the deployed site: `https://chaimi760970774.github.io`).
+
+If something fails, open the browser's **Network** tab: requests should go to the server's address. A CORS error means the origin is not in `CLIENT_ORIGIN`; a mixed content error means the app is calling an `http://` address from an `https://` page.
 
 ## Pages
 

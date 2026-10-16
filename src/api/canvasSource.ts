@@ -3,7 +3,7 @@ import type { Canvas, CanvasChanges, ElementChanges, ElementServerFields, NewStr
 // All requests to the Sketchspace server (REST). Every function returns a promise;
 // if the server answers with an error, the promise rejects with an ApiError carrying its message.
 
-export const API_URL: string = import.meta.env.VITE_API_URL || "http://localhost:3000";
+export const API_URL: string = import.meta.env.VITE_API_URL ?? "";
 
 // an error from the server; status is the HTTP status (0 = the server could not be reached)
 // hasServerMessage is true when the server explained the error itself ({ error: "..." });

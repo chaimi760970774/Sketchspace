@@ -26,9 +26,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          # VITE_API_URL comes from .env.production; setting it here as an empty value would override it
           VITE_UNSPLASH_ACCESS_KEY: ${{ secrets.VITE_UNSPLASH_ACCESS_KEY }}
-          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -7,6 +7,8 @@ export default defineConfig({
     ],
     server: {
         port: 8080,
+        // Google's sign-in popup talks back to this page with postMessage; Google recommends this value
+        headers: { 'Cross-Origin-Opener-Policy': 'same-origin-allow-popups' },
     },
     build: {
         sourcemap: true,

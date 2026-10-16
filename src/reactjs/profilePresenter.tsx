@@ -14,6 +14,7 @@ const Profile = observer(// observer needed for the presenter to update (its vie
                             draft={props.model.profileDraft}
                             error={props.model.getProfileError()}
                             hasUnsavedDraft={props.model.hasUnsavedDraft()}
+                            savingPhoto={props.model.savingPhoto}
 
                             onModify={handlerModifyACB}
                             onDraftChange={handlerDraftChangeACB}

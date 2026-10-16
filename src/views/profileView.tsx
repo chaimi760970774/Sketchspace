@@ -10,6 +10,7 @@ interface ProfileViewProps {
     draft: string;
     error: string;
     hasUnsavedDraft: boolean;
+    savingPhoto: boolean;               // true while the photo is uploaded or removed
     onModify: (field: ProfileField) => void;
     onDraftChange: (text: string) => void;
     onSave: () => void;

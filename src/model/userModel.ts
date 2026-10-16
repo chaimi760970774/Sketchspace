@@ -48,6 +48,7 @@ interface UserState {
     // Profile
     editingField: ProfileField | null;      // field being edited, null = none
     profileDraft: string;                   // input value while editing
+    savingPhoto: boolean;                   // true while a photo is uploaded or removed
 }
 
 const initialState: UserState = {
@@ -62,6 +63,7 @@ const initialState: UserState = {
     googleEnabled: isGoogleConfigured,
     editingField: null,
     profileDraft: "",
+    savingPhoto: false,
 };
 
 // user, login, profile

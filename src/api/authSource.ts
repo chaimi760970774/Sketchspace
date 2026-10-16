@@ -24,7 +24,7 @@ interface Credentials {
     password: string;
 }
 
-// avatarUrl is an https URL, or null to remove it
+// avatarUrl is an https URL, a data:image/png|jpeg|webp;base64 URL (at most 204800 characters), or null to remove it
 interface UserChanges {
     displayName?: string;
     avatarUrl?: string | null;

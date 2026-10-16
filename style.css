@@ -172,7 +172,11 @@ button { font: inherit; cursor: pointer; }
 }
 .profile-avatar { width: 140px; height: 140px; border-radius: 50%; background: white; object-fit: cover; }
 .profile-name { flex: 1; font-size: 22px; }
+.profile-avatar-box { position: relative; }        /* the spinner sits on top of the avatar */
+.profile-avatar-spinner { position: absolute; top: 50%; left: 50%; margin: -20px 0 0 -20px; }
+.profile-photo-actions { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .upload-label { font-size: 22px; cursor: pointer; }
+.upload-label.disabled { opacity: 0.4; cursor: default; }
 .upload-label input { display: none; }
 .profile-row {
     display: flex;

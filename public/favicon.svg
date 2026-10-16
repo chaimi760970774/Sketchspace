@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
     <!-- same shapes as the logo in src/views/logoView.jsx -->
     <circle cx="16" cy="18" r="12" fill="#f4a261"/>
-    <polygon points="26,8 38,32 14,32" fill="#333" opacity="0.85"/>
+    <polygon points="26,8 38,32 14,32" fill="none" stroke="#242424" stroke-width="1.8" stroke-dasharray="3 2.5" stroke-linejoin="round"/>
 </svg>

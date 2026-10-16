@@ -22,9 +22,8 @@ interface GalleryViewProps {
 export function GalleryView(props: GalleryViewProps){
     return (
         <div>
-            {/* hero banner, grey placeholder for now, replace with image later */}
             <div className="hero">
-                <h1 className="hero-title">Making Collage Together!</h1>
+                <h1 className="hero-title">Let's Make Collage Together!</h1>
                 <button className="outline-button" disabled={props.creating} onClick={props.onNewCanvas}>
                     {props.creating ? "Creating..." : "Start doodling"}
                 </button>

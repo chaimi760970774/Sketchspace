@@ -45,13 +45,23 @@ function loadGoogleScript(): Promise<void> {
     return scriptLoad.promise;
 }
 
+// Google wants initialize() called once per page: calling it again (React runs effects twice in development, and the
+// login page opens many times) prints a warning and only the last call counts. So it is called the first time, and the
+// function it calls back always goes to the latest onCredential. Mutation is intended: this is module state.
+const googleSetup: { initialized: boolean; onCredential: ((idToken: string) => void) | null } = { initialized: false, onCredential: null };
+
 // draws Google's button inside element; onCredential(idToken) is called when the user signs in
 export function renderGoogleButton(element: HTMLElement, onCredential: (idToken: string) => void): Promise<void> {
     function scriptReadyACB(): void {
         const google = window.google;
         if (!google) throw new Error("Google sign-in did not start");
-        function gotResponseACB(response: { credential: string }): void { onCredential(response.credential); }
-        google.accounts.id.initialize({ client_id: CLIENT_ID, callback: gotResponseACB });
+        googleSetup.onCredential = onCredential;
+        if (!googleSetup.initialized) {
+            function gotResponseACB(response: { credential: string }): void { googleSetup.onCredential?.(response.credential); }
+            google.accounts.id.initialize({ client_id: CLIENT_ID, callback: gotResponseACB });
+            googleSetup.initialized = true;
+        }
+        element.replaceChildren();      // the slot may already hold a button from an earlier draw
         google.accounts.id.renderButton(element, { type: "standard", theme: "outline", size: "large", text: "continue_with", width: 320 });
     }
     return loadGoogleScript().then(scriptReadyACB);

@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 import type { Socket } from "socket.io-client";
-import { API_URL } from "/src/api/canvasSource.ts";
+import { API_URL, getLoginToken } from "/src/api/canvasSource.ts";
 import type { ElementChanges, ElementServerFields, NewStroke, ServerElement, ServerStroke } from "/src/model/types.ts";
 
 // Live drawing over socket.io. A socket is in one canvas at a time.
@@ -68,7 +68,9 @@ const connection: { socket: CanvasSocket | null } = { socket: null };
 // connects once (later calls do nothing)
 export function startSocket(handlers: SocketHandlers): void {
     if (connection.socket) return;
-    const socket: CanvasSocket = io(API_URL, { withCredentials: true });      // sends the login cookie
+    // the login token goes with the connection (read again on every reconnect, so a new login is picked up)
+    function sendTokenCB(sendAuth: (auth: object) => void): void { sendAuth({ token: getLoginToken() }); }
+    const socket: CanvasSocket = io(API_URL, { auth: sendTokenCB });
     socket.on("connect", handlers.onConnect);
     socket.on("disconnect", handlers.onDisconnect);
     socket.on("stroke:added", handlers.onStrokeAdded);
@@ -84,7 +86,7 @@ export function startSocket(handlers: SocketHandlers): void {
     connection.socket = socket;
 }
 
-// closes the connection, so the next canvas opens a new one with the current login cookie
+// closes the connection, so the next canvas opens a new one with the current login
 export function stopSocket(): void {
     if (connection.socket) connection.socket.disconnect();
     connection.socket = null;

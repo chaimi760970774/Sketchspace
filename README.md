@@ -1,7 +1,8 @@
 # Sketchspace
 
 **Live site:** [chaimi760970774.github.io/Sketchspace](https://chaimi760970774.github.io/Sketchspace/)
-**Backend:** [sketchspace-server](https://github.com/yukistillalive/sketchspace-server) (hosted at `https://91-98-226-226.sslip.io`)
+
+**Backend:** [sketchspace-server](https://github.com/yukistillalive/sketchspace-server) 
 
 <!-- Add a screenshot of the canvas page here, e.g. ![Sketchspace](screenshot.png) -->
 

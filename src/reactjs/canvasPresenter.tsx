@@ -2,8 +2,10 @@ import { observer } from "mobx-react-lite";
 import { CanvasView } from "/src/views/canvas/canvasView.tsx";
 import { CanvasBoardView } from "/src/views/canvas/canvasBoardView.tsx";
 import { CanvasStatusView } from "/src/views/canvas/canvasStatusView.tsx";
+import { CanvasToolbarView } from "/src/views/canvas/canvasToolbarView.tsx";
 import { ShapePanelView } from "/src/views/canvas/shapePanelView.tsx";
 import { StrokePanelView } from "/src/views/canvas/strokePanelView.tsx";
+import { PhotoPanelView } from "/src/views/canvas/photoPanelView.tsx";
 import { ShareDialogView } from "/src/views/canvas/shareDialogView.tsx";
 import { PhotoSearchView } from "/src/views/canvas/photoSearchView.tsx";
 import { useNavigate, useParams } from "react-router-dom";
@@ -70,44 +72,50 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         nameError={props.model.canvasNameError}
                         saveStatus={props.model.getSaveStatus()}
                         canDelete={props.model.canDeleteSelection()}
+                        eraserOn={props.model.eraserOn}
+                        eyedropperOn={props.model.eyedropperOn}
 
                         onHomeClick={handlerHomeACB}
+                        onGalleryClick={handlerGalleryClickACB}
+                        onMyWorkClick={handlerMyWorkClickACB}
                         onProfileClick={() => navigate("/profile")}
-                        onToolChange={handlerToolChangeACB}
                         onRenameStart={handlerRenameStartACB}
                         onNameDraftChange={handlerNameDraftChangeACB}
                         onRenameSave={handlerRenameSaveACB}
                         onRenameCancel={handlerRenameCancelACB}
-                        eraserOn={props.model.eraserOn}
-                        onEraserToggle={handlerEraserToggleACB}
                         onToolPanelPress={handlerToolPanelPressACB}
                         onClear={handlerClearACB}
                         onShare={handlerShareACB}
                         onExport={handlerExportACB}
                         onDelete={handlerDeleteACB}
 
+                        renderToolbar={renderToolbarCB}
                         renderBoard={renderBoardCB}>
 
-                {props.model.currentTool === "shape"
-                    ? <ShapePanelView selectedPhoto={props.model.selectedPhoto}
-                                      canCut={props.model.canCut()}
-                                      canFill={props.model.canFill()}
-                                      shapeActionHint={props.model.getShapeActionHint()}
-                                      fillColor={props.model.fillColor}
-                                      onCut={handlerCutACB}
-                                      onFill={handlerFillACB}
-                                      onFillColorChange={handlerFillColorChangeACB}
-                                      onShapeClick={handlerShapeClickACB}
-                                      onUploadPhoto={handlerUploadPhotoACB}/>
+                {props.model.currentTool === "shape" &&
+                    <ShapePanelView canCut={props.model.canCut()}
+                                    canFill={props.model.canFill()}
+                                    shapeActionHint={props.model.getShapeActionHint()}
+                                    fillColor={props.model.fillColor}
+                                    onCut={handlerCutACB}
+                                    onFill={handlerFillACB}
+                                    onFillColorChange={handlerFillColorChangeACB}
+                                    onShapeClick={handlerShapeClickACB}/>}
 
-                    : <StrokePanelView strokeType={props.model.strokeType}
-                                       strokeWidth={props.model.strokeWidth}
-                                       strokeColor={props.model.strokeColor}
-                                       strokeOpacity={props.model.strokeOpacity}
-                                       onStrokeTypeChange={handlerStrokeTypeChangeACB}
-                                       onStrokeWidthChange={handlerStrokeWidthChangeACB}
-                                       onStrokeOpacityChange={handlerStrokeOpacityChangeACB}
-                                       onStrokeColorChange={handlerStrokeColorChangeACB}/>}
+                {props.model.currentTool === "stroke" &&
+                    <StrokePanelView strokeType={props.model.strokeType}
+                                     strokeWidth={props.model.strokeWidth}
+                                     strokeColor={props.model.strokeColor}
+                                     strokeOpacity={props.model.strokeOpacity}
+                                     onStrokeTypeChange={handlerStrokeTypeChangeACB}
+                                     onStrokeWidthChange={handlerStrokeWidthChangeACB}
+                                     onStrokeOpacityChange={handlerStrokeOpacityChangeACB}
+                                     onStrokeColorChange={handlerStrokeColorChangeACB}/>}
+
+                {props.model.currentTool === "photo" &&
+                    <PhotoPanelView selectedPhotos={props.model.selectedPhotos.slice()}
+                                    onUploadPhoto={handlerUploadPhotoACB}
+                                    onRemovePhoto={handlerRemovePhotoACB}/>}
             </CanvasView>
 
             {props.model.shareDialogOpen &&
@@ -132,16 +140,33 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                                  onOrientationChange={handlerPhotoOrientationChangeACB}
                                  onColorChange={handlerPhotoColorChangeACB}
                                  onSearch={handlerPhotoSearchACB}
-                                 onPhotoSelect={handlerPhotoSelectACB}
+                                 pendingSelection={props.model.pendingPhotoSelection.map(p => p.id)}
+                                 onPhotoToggle={handlerPhotoToggleACB}
+                                 onConfirm={handlerPhotoConfirmACB}
+                                 onDeselectAll={handlerDeselectAllACB}
                                  onClose={handlerPhotoSearchCloseACB}/>}
             </>
         );
+
+        function renderToolbarCB(){
+            return (
+                <CanvasToolbarView
+                    currentTool={props.model.currentTool}
+                    eraserOn={props.model.eraserOn}
+                    eyedropperOn={props.model.eyedropperOn}
+                    onToolClick={handlerToolClickACB}
+                    onEraserClick={handlerEraserToggleACB}
+                    onEyedropperClick={handlerEyedropperToggleACB}
+                />
+            );
+        }
 
         // the view keeps the Konva stage (it needs it for export) and hands it in here
         function renderBoardCB(stageRef: RefObject<Konva.Stage | null>){
             return <CanvasBoardView stageRef={stageRef}
                                     currentTool={props.model.currentTool}
                                     eraserOn={props.model.eraserOn}
+                                    eyedropperOn={props.model.eyedropperOn}
                                     elements={props.model.elements.slice()}   // slice() so the presenter re-renders when elements change
                                     strokes={props.model.strokes.slice()}
                                     selectedId={props.model.selectedElementId}
@@ -155,7 +180,8 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                                     onElementChange={handlerElementChangeACB}
                                     onStrokeEnd={handlerStrokeEndACB}
                                     onErase={handlerEraseACB}
-                                    onEraseEnd={handlerEraseEndACB}/>;
+                                    onEraseEnd={handlerEraseEndACB}
+                                    onColorPick={handlerColorPickACB}/>;
         }
 
         // opening an existing canvas, or creating one for /canvas and replacing the URL with its id
@@ -173,8 +199,10 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerCreateRetryACB(){ props.model.createNewCanvas().then(showNewCanvasACB); }
         function handlerOpenRetryACB(){ if (canvasId) props.model.loadCanvas(canvasId); }
         function handlerHomeACB(){ navigate("/"); }
+        function handlerGalleryClickACB(){ navigate("/gallery"); }
+        function handlerMyWorkClickACB(){ navigate("/mywork"); }
 
-        function handlerToolChangeACB(tool: Tool){ props.model.setCurrentTool(tool); }
+        function handlerToolClickACB(tool: Tool){ props.model.setCurrentTool(tool); }
 
         // topbar
         function handlerRenameStartACB(){ props.model.startRename(); }
@@ -182,6 +210,10 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerRenameSaveACB(){ props.model.saveRename(); }
         function handlerRenameCancelACB(){ props.model.cancelRename(); }
         function handlerEraserToggleACB(){ props.model.toggleEraser(); }
+        function handlerEyedropperToggleACB(){ props.model.toggleEyedropper(); }
+        function handlerColorPickACB(color: string){
+            props.model.setStrokeColor(color);
+        }
         function handlerToolPanelPressACB(){ props.model.turnEraserOff(); }
         function handlerClearACB(){ props.model.clearCanvas(); }
         function handlerShareACB(){ props.model.openShareDialog(); }
@@ -193,7 +225,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
 
         // canvas board
         function handlerDropItemACB(type: string, position: Point){
-            if (type === "photo") props.model.addPhotoElement(position);
+            if (type.startsWith("photo:")) props.model.addPhotoElement(type.slice(6), position);
             // shapes come in as "shape:star", "shape:circle" ...
             if (type.startsWith("shape:")) props.model.addShapeElement(type.split(":")[1], position);
         }
@@ -207,6 +239,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         // shape panel
         function handlerShapeClickACB(shape: ShapeName){ props.model.addShapeAtCentre(shape); }
         function handlerUploadPhotoACB(){ props.model.openPhotoSearch(); }
+        function handlerRemovePhotoACB(id: string){ props.model.removeSelectedPhoto(id); }
         function handlerCutACB(){ props.model.cutWithSelectedShape(); }
         function handlerFillACB(){ props.model.fillSelectedShape(); }
         function handlerFillColorChangeACB(color: string){ props.model.setFillColor(color); }
@@ -216,7 +249,9 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerPhotoSearchACB(){ props.model.doPhotoSearch(); }
         function handlerPhotoOrientationChangeACB(orientation: string){ props.model.setPhotoSearchOrientation(orientation); }
         function handlerPhotoColorChangeACB(color: string){ props.model.setPhotoSearchColor(color); }
-        function handlerPhotoSelectACB(photo: UnsplashPhoto){ props.model.selectPhoto(photo); }
+        function handlerPhotoToggleACB(photo: UnsplashPhoto){ props.model.togglePendingPhoto(photo); }
+        function handlerPhotoConfirmACB(){ props.model.confirmPhotoSelection(); }
+        function handlerDeselectAllACB(){ props.model.clearPendingSelection(); }
         function handlerPhotoSearchCloseACB(){ props.model.closePhotoSearch(); }
 
         // stroke panel

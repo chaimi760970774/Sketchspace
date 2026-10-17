@@ -30,7 +30,7 @@ export interface Point {
 export type SaveStatus = "saving" | "saved" | "failed";
 
 // the left panel of the canvas page
-export type Tool = "shape" | "stroke";
+export type Tool = "shape" | "stroke" | "photo";
 
 // ========== Canvases ==========
 
@@ -205,6 +205,7 @@ export interface SelectedPhoto {
     ratio: number;
     photographer: string;
     photographerLink: string;
+    downloadLocation: string;   // Unsplash download tracking URL
 }
 
 // the part of an Unsplash search result the app uses

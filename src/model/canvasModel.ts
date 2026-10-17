@@ -13,9 +13,10 @@ const ELEMENT_LABELS: Record<CanvasElement["type"], string> = { photo: "Photo", 
 
 interface CanvasState {
     // Tools
-    currentTool: Tool;              // the left panel
+    currentTool: Tool | null;       // the icon toolbar; null = no panel open
     eraserOn: boolean;              // the topbar eraser button; while on, clicks and drags erase whatever the left panel shows
     eraserTarget: "strokes" | "elements" | null;    // what the current erasing drag deletes, null before the first hit
+    eyedropperOn: boolean;          // when on, the next canvas click samples the pixel colour into strokeColor
     strokeColor: string;
     strokeWidth: number;
     strokeType: Brush;
@@ -29,7 +30,8 @@ interface CanvasState {
     photoSearchOrientation: string; // "any" / "landscape" / "portrait" / "squarish"
     photoSearchColor: string;       // "any" or an Unsplash colour, e.g. "blue", "black_and_white"
     photoSearchPromiseState: PromiseState<UnsplashPhoto[]>;
-    selectedPhoto: SelectedPhoto | null;    // photo picked in the search, ready to drag onto the canvas
+    selectedPhotos: SelectedPhoto[];            // photos confirmed for use on the canvas
+    pendingPhotoSelection: SelectedPhoto[];     // selection being built inside the open modal
 
     // Elements on the current canvas (photos, shapes, cutouts), see CanvasElement in types.ts
     // status (frontend only): "saving" until the server gives a new element its id, then "saved"
@@ -42,9 +44,10 @@ interface CanvasState {
 }
 
 const initialState: CanvasState = {
-    currentTool: "shape",
+    currentTool: null,
     eraserOn: false,
     eraserTarget: null,
+    eyedropperOn: false,
     strokeColor: "#000000",
     strokeWidth: 4,
     strokeType: "pencil",
@@ -56,7 +59,8 @@ const initialState: CanvasState = {
     photoSearchOrientation: "any",
     photoSearchColor: "any",
     photoSearchPromiseState: {},
-    selectedPhoto: null,
+    selectedPhotos: [],
+    pendingPhotoSelection: [],
     elements: [],
     pendingElementChanges: {},
     selectedElementId: null,
@@ -97,16 +101,28 @@ export const canvasModel = {
 
     // Tools
     setCurrentTool(tool: Tool): void {
-        this.currentTool = tool;
+        this.currentTool = this.currentTool === tool ? null : tool;
         this.eraserOn = false;      // choosing a tool switches the eraser off
+        this.eyedropperOn = false;  // choosing a tool switches the eyedropper off
         // with the stroke tool, clicks draw instead of select, so nothing stays selected
-        if (tool === "stroke") this.selectedElementId = null;
+        if (this.currentTool === "stroke") this.selectedElementId = null;
     },
     turnEraserOff(): void { this.eraserOn = false; },
     toggleEraser(): void {
         this.eraserOn = !this.eraserOn;
-        if (this.eraserOn) this.selectedElementId = null;      // clicks erase instead of select
+        if (this.eraserOn) {
+            this.eyedropperOn = false;  // eraser and eyedropper are mutually exclusive
+            this.selectedElementId = null;      // clicks erase instead of select
+        }
     },
+    toggleEyedropper(): void {
+        this.eyedropperOn = !this.eyedropperOn;
+        if (this.eyedropperOn) {
+            this.eraserOn = false;  // eraser and eyedropper are mutually exclusive
+            this.selectedElementId = null;
+        }
+    },
+    turnEyedropperOff(): void { this.eyedropperOn = false; },
 
     // Erasing: deletes whole lines, photos, shapes and cutouts under the pointer, where a click would hit them.
     // One drag deletes one kind only: lines if it first touches a line, otherwise elements,
@@ -143,7 +159,10 @@ export const canvasModel = {
     setFillColor(color: string): void { this.fillColor = color; },
 
     // Unsplash photo search
-    openPhotoSearch(): void { this.photoSearchOpen = true; },
+    openPhotoSearch(): void {
+        this.pendingPhotoSelection = [...this.selectedPhotos];
+        this.photoSearchOpen = true;
+    },
     closePhotoSearch(): void { this.photoSearchOpen = false; },
     setPhotoSearchQuery(query: string): void {
         this.photoSearchQuery = query;
@@ -168,19 +187,38 @@ export const canvasModel = {
         this.photoSearchColor = color;
         if (this.photoSearchPromiseState.promise) this.doPhotoSearch();
     },
-    selectPhoto(photo: UnsplashPhoto): void {
-        this.selectedPhoto = {
+    togglePendingPhoto(photo: UnsplashPhoto): void {
+        const idx = this.pendingPhotoSelection.findIndex(p => p.id === photo.id);
+        if (idx >= 0) {
+            this.pendingPhotoSelection = this.pendingPhotoSelection.filter((_, i) => i !== idx);
+            return;
+        }
+        if (this.pendingPhotoSelection.length >= 8) return;
+        this.pendingPhotoSelection = [...this.pendingPhotoSelection, {
             id: photo.id,
             url: photo.urls.small,
-            ratio: photo.height / photo.width,      // keeps the original shape when added to canvas
+            ratio: photo.height / photo.width,
             photographer: photo.user.name,
             photographerLink: photo.user.links.html,
-        };
-        trackDownload(photo.links.download_location).catch(trackingFailedACB);
+            downloadLocation: photo.links.download_location,
+        }];
+    },
+    removeSelectedPhoto(id: string): void {
+        this.selectedPhotos = this.selectedPhotos.filter(p => p.id !== id);
+    },
+    clearPendingSelection(): void {
+        this.pendingPhotoSelection = [];
+    },
+    confirmPhotoSelection(): void {
+        this.selectedPhotos = this.pendingPhotoSelection;
+        this.pendingPhotoSelection = [];
         this.photoSearchOpen = false;
-
-        // only statistics for Unsplash, the user can keep working with the photo, so the error is ignored
-        function trackingFailedACB(): void {}
+        const model = this;
+        this.selectedPhotos.forEach(trackACB);
+        function trackACB(photo: SelectedPhoto): void {
+            trackDownload(photo.downloadLocation).catch(failedACB);
+        }
+        function failedACB(): void {}
     },
 
     // Canvas elements
@@ -233,21 +271,22 @@ export const canvasModel = {
             model.showToast("Could not save the " + ELEMENT_LABELS[element.type].toLowerCase() + " (" + error.message + "), it was removed", "error");
         }
     },
-    addPhotoElement(position: Point): void {
-        if (!this.selectedPhoto) return;
+    addPhotoElement(photoId: string, position: Point): void {
+        function isTargetCB(p: SelectedPhoto): boolean { return p.id === photoId; }
+        const photo = this.selectedPhotos.find(isTargetCB);
+        if (!photo) return;
         const width = 200;
-        const height = width * this.selectedPhoto.ratio;
-        // position is where the photo was dropped, centre the photo there
+        const height = width * photo.ratio;
         this.addElement({
             id: crypto.randomUUID(),
             type: "photo",
-            url: this.selectedPhoto.url,
-            photographer: this.selectedPhoto.photographer,          // kept so the credit stays after picking another photo
-            photographerLink: this.selectedPhoto.photographerLink,
+            url: photo.url,
+            photographer: photo.photographer,
+            photographerLink: photo.photographerLink,
             x: position.x - width / 2,
             y: position.y - height / 2,
-            width: width,
-            height: height,
+            width,
+            height,
             rotation: 0,
         });
     },

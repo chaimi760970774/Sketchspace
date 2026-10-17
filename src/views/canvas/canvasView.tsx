@@ -12,7 +12,7 @@ const TEXT_FIELD_TAGS = ["INPUT", "TEXTAREA", "SELECT"];
 
 
 interface CanvasViewProps {
-    currentTool: Tool;
+    currentTool: Tool | null;
     liveStatus: LiveStatus;
     peerCount: number;
     liveLabel: string;
@@ -27,16 +27,18 @@ interface CanvasViewProps {
     saveStatus: SaveStatus | "";            // "" when there is nothing on the canvas
     canDelete: boolean;
     eraserOn: boolean;
-    children: ReactNode;                    // the left tool panel
+    eyedropperOn: boolean;
+    children: ReactNode;                    // the tool panel content
     renderBoard: (stageRef: RefObject<Konva.Stage | null>) => ReactNode;
+    renderToolbar: () => ReactNode;
     onHomeClick: () => void;
+    onGalleryClick: () => void;
+    onMyWorkClick: () => void;
     onProfileClick: () => void;
-    onToolChange: (tool: Tool) => void;
     onRenameStart: () => void;
     onNameDraftChange: (name: string) => void;
     onRenameSave: () => void;
     onRenameCancel: () => void;
-    onEraserToggle: () => void;
     onToolPanelPress: () => void;
     onClear: () => void;
     onShare: () => void;
@@ -54,18 +56,23 @@ export function CanvasView(props: CanvasViewProps){
 
     return (
         <div className="layout">
-            {/* canvas page's own sidebar */}
+            {/* main nav sidebar — unchanged on canvas page */}
             <div className="sidebar">
                 <LogoView onClick={props.onHomeClick}/>
-                <button className={toolClass("shape")} onClick={clickShapeToolACB}>Shape</button>
-                <button className={toolClass("stroke")} onClick={clickStrokeToolACB}>Stroke</button>
+                <button className="sidebar-item" onClick={props.onGalleryClick}>gallery</button>
+                <button className="sidebar-item" onClick={props.onMyWorkClick}>My Work</button>
                 <button className="sidebar-item sidebar-bottom" onClick={props.onProfileClick}>Profile</button>
             </div>
 
-            {/* left tool panel, the presenter decides which panel to show; using it switches the eraser off */}
-            <div className="tool-panel" onMouseDown={props.onToolPanelPress}>
-                {props.children}
-            </div>
+            {/* narrow icon toolbar */}
+            {props.renderToolbar()}
+
+            {/* tool panel — only rendered when a tool is active */}
+            {props.currentTool !== null && (
+                <div className="tool-panel" onMouseDown={props.onToolPanelPress}>
+                    {props.children}
+                </div>
+            )}
 
             <div className="canvas-main">
                 <div className="canvas-topbar">
@@ -79,11 +86,6 @@ export function CanvasView(props: CanvasViewProps){
                         {renderName()}
                         {renderSaveStatus()}
                     </div>
-
-                    <button className="small-button" aria-pressed={props.eraserOn}
-                            title="Eraser: drag over lines, photos and shapes to delete them" onClick={props.onEraserToggle}>
-                        Eraser
-                    </button>
 
                     <div className="topbar-right">
                         {props.isOwner &&
@@ -178,12 +180,6 @@ export function CanvasView(props: CanvasViewProps){
             return <span className="save-status">All changes saved</span>;
         return null;
     }
-
-    function toolClass(tool: Tool){
-        return props.currentTool === tool ? "sidebar-item tool-active" : "sidebar-item";
-    }
-    function clickShapeToolACB(){ props.onToolChange("shape"); }
-    function clickStrokeToolACB(){ props.onToolChange("stroke"); }
 
     function creditCB(credit: PhotoCredit, index: number){
         return (

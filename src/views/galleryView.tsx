@@ -1,5 +1,6 @@
 import "/style.css"
 import { formatDate } from "/src/utils/formatDate.ts";
+import { getThumbnail } from "/src/utils/thumbnailStore.ts";
 import type { ChangeEvent, KeyboardEvent } from "react";
 import type { Canvas } from "/src/model/types.ts";
 
@@ -74,12 +75,18 @@ export function GalleryView(props: GalleryViewProps){
     }
 
     function cardCB(canvas: Canvas){
+        const thumb = getThumbnail(canvas._id);
         function clickCardACB(){ props.onCardClick(canvas); }
 
         return (
             <div key={canvas._id} className="card-item" onClick={clickCardACB}>
-                <div className="card-name">{canvas.name}</div>
-                <div className="card-date">Updated {formatDate(canvas.updatedAt)}</div>
+                <div className="card-preview">
+                    {thumb && <img className="card-thumbnail" src={thumb} alt="" aria-hidden="true"/>}
+                </div>
+                <div className="card-info">
+                    <div className="card-name">{canvas.name}</div>
+                    <div className="card-date">Updated {formatDate(canvas.updatedAt)}</div>
+                </div>
             </div>
         );
     }

@@ -1,4 +1,5 @@
 import { observer } from "mobx-react-lite";
+import { saveThumbnail } from "/src/utils/thumbnailStore.ts";
 import { CanvasView } from "/src/views/canvas/canvasView.tsx";
 import { CanvasBoardView } from "/src/views/canvas/canvasBoardView.tsx";
 import { CanvasStatusView } from "/src/views/canvas/canvasStatusView.tsx";
@@ -88,6 +89,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         onShare={handlerShareACB}
                         onExport={handlerExportACB}
                         onDelete={handlerDeleteACB}
+                        onCaptureThumbnail={handlerCaptureThumbnailACB}
 
                         renderToolbar={renderToolbarCB}
                         renderBoard={renderBoardCB}>
@@ -222,6 +224,9 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerShareCloseACB(){ props.model.closeShareDialog(); }
         function handlerExportACB(succeeded: boolean){ props.model.showExportResult(succeeded); }
         function handlerDeleteACB(){ props.model.deleteSelection(); }
+        function handlerCaptureThumbnailACB(dataUrl: string | null): void {
+            if (canvasId && dataUrl) saveThumbnail(canvasId, dataUrl);
+        }
 
         // canvas board
         function handlerDropItemACB(type: string, position: Point){

@@ -37,3 +37,30 @@ export function downloadStageImage(stage: Konva.Stage | null, fileName: string):
     function hideCB(node: Konva.Node): void { node.hide(); }
     function showCB(node: Konva.Node): void { node.show(); }
 }
+
+// Captures a small JPEG thumbnail of the stage for use in canvas preview cards.
+// Returns a data URL, or null if the stage is unavailable or the canvas is CORS-tainted.
+export function captureStageThumb(stage: Konva.Stage | null): string | null {
+    if (!stage) return null;
+    try {
+        const transformers = stage.find("Transformer");
+        transformers.forEach(hideCB);
+        const drawing = stage.toCanvas({ pixelRatio: 0.22 });   // ~198x132 px from 900x600
+        transformers.forEach(showCB);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = drawing.width;
+        canvas.height = drawing.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return null;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(drawing, 0, 0);
+        return canvas.toDataURL("image/jpeg", 0.6);
+    } catch {
+        return null;    // CORS-tainted canvas (e.g. Unsplash photos without CORS headers)
+    }
+
+    function hideCB(node: Konva.Node): void { node.hide(); }
+    function showCB(node: Konva.Node): void { node.show(); }
+}

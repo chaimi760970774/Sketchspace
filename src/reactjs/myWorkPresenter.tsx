@@ -43,7 +43,6 @@ const MyWork = observer(// observer needed for the presenter to update (its view
                            onDragOverTab={handlerDragOverTabACB}
                            onMoveCanvas={handlerMoveCanvasACB}
                            onDeleteCanvas={handlerDeleteCanvasACB}
-                           onShareChange={handlerShareChangeACB}
                            onNewCanvas={handlerNewCanvasACB}
                            onCardClick={handlerCardClickACB}/>;
 
@@ -62,7 +61,6 @@ const MyWork = observer(// observer needed for the presenter to update (its view
         function handlerDragOverTabACB(tab: string | null){ props.model.setDragOverTab(tab); }
         function handlerMoveCanvasACB(canvasId: string, folderId: string | null){ props.model.moveCanvasToFolder(canvasId, folderId); }
         function handlerDeleteCanvasACB(canvasId: string){ props.model.removeCanvas(canvasId); }
-        function handlerShareChangeACB(canvasId: string, isShared: boolean){ props.model.setCanvasShared(canvasId, isShared); }
 
         // the canvas is created on the server first, then opened
         function handlerNewCanvasACB(){ props.model.createNewCanvas().then(openCanvasACB); }

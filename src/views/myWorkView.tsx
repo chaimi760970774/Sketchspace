@@ -1,5 +1,6 @@
 import "/style.css"
 import { formatDate } from "/src/utils/formatDate.ts";
+import { getThumbnail } from "/src/utils/thumbnailStore.ts";
 import type { ChangeEvent, DragEvent, KeyboardEvent, MouseEvent } from "react";
 import type { Canvas, Folder } from "/src/model/types.ts";
 
@@ -34,7 +35,6 @@ interface MyWorkViewProps {
     onDragOverTab: (tab: string | null) => void;
     onMoveCanvas: (canvasId: string, folderId: string | null) => void;
     onDeleteCanvas: (canvasId: string) => void;
-    onShareChange: (canvasId: string, isShared: boolean) => void;
     onNewCanvas: () => void;
     onCardClick: (canvas: Canvas) => void;
 }
@@ -185,9 +185,10 @@ export function MyWorkView(props: MyWorkViewProps){
         );
     }
 
-    // Canvas cards (draggable onto folder tabs), with a share switch and a delete button
+    // Canvas cards (draggable onto folder tabs), with a delete button and preview thumbnail
     function cardCB(canvas: Canvas){
         const busy = props.busyCanvasIds.includes(canvas._id);     // a request for this canvas is running
+        const thumb = getThumbnail(canvas._id);
 
         function clickCardACB(){ props.onCardClick(canvas); }
         function dragStartACB(evt: DragEvent<HTMLDivElement>){
@@ -196,9 +197,6 @@ export function MyWorkView(props: MyWorkViewProps){
         }
         function dragEndACB(){ props.onDragOverTab(null); }     // also clears the highlight if dropped elsewhere
 
-        // the controls sit on the card, so clicks on them must not also open the canvas
-        function stopClickACB(evt: MouseEvent<HTMLLabelElement>){ evt.stopPropagation(); }
-        function shareChangeACB(evt: ChangeEvent<HTMLInputElement>){ props.onShareChange(canvas._id, evt.target.checked); }
         function deleteACB(evt: MouseEvent<HTMLButtonElement>){
             evt.stopPropagation();
             const confirmed = window.confirm("Delete \"" + canvas.name + "\"? This cannot be undone.");
@@ -211,13 +209,14 @@ export function MyWorkView(props: MyWorkViewProps){
                 <button className="card-delete" aria-label={"Delete " + canvas.name} title="Delete canvas"
                         disabled={busy} onClick={deleteACB}>×</button>
 
-                <div className="card-name">{canvas.name}</div>
-                <div className="card-date">Updated {formatDate(canvas.updatedAt)}</div>
+                <div className="card-preview">
+                    {thumb && <img className="card-thumbnail" src={thumb} alt="" aria-hidden="true"/>}
+                </div>
 
-                <label className="card-share" onClick={stopClickACB}>
-                    <input type="checkbox" checked={canvas.isShared} disabled={busy} onChange={shareChangeACB}/>
-                    {canvas.isShared ? "Shared" : "Private"}
-                </label>
+                <div className="card-info">
+                    <div className="card-name">{canvas.name}</div>
+                    <div className="card-date">Updated {formatDate(canvas.updatedAt)}</div>
+                </div>
 
                 {busy && <div className="spinner spinner-small" role="status" aria-label="Saving"></div>}
             </div>

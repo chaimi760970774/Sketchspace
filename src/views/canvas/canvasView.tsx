@@ -4,7 +4,7 @@ import type { ReactNode, RefObject, ChangeEvent, KeyboardEvent as ReactKeyboardE
 import type Konva from "konva";
 import type { PhotoCredit, SaveStatus, Tool } from "/src/model/types.ts";
 import type { LiveStatus } from "/src/model/openCanvasModel.ts";
-import { downloadStageImage } from "/src/utils/exportImage.ts";
+import { downloadStageImage, captureStageThumb } from "/src/utils/exportImage.ts";
 import { LogoView } from "/src/views/logoView.tsx";
 
 // typing in these must never delete what is selected on the canvas
@@ -44,6 +44,7 @@ interface CanvasViewProps {
     onShare: () => void;
     onExport: (succeeded: boolean) => void;
     onDelete: () => void;
+    onCaptureThumbnail: (dataUrl: string | null) => void;
 }
 
 export function CanvasView(props: CanvasViewProps){
@@ -58,10 +59,10 @@ export function CanvasView(props: CanvasViewProps){
         <div className="layout">
             {/* main nav sidebar — unchanged on canvas page */}
             <div className="sidebar">
-                <LogoView onClick={props.onHomeClick}/>
-                <button className="sidebar-item" onClick={props.onGalleryClick}>gallery</button>
-                <button className="sidebar-item" onClick={props.onMyWorkClick}>My Work</button>
-                <button className="sidebar-item sidebar-bottom" onClick={props.onProfileClick}>Profile</button>
+                <LogoView onClick={homeClickACB}/>
+                <button className="sidebar-item" onClick={galleryClickACB}>gallery</button>
+                <button className="sidebar-item" onClick={myWorkClickACB}>My Work</button>
+                <button className="sidebar-item sidebar-bottom" onClick={profileClickACB}>Profile</button>
             </div>
 
             {/* narrow icon toolbar */}
@@ -111,6 +112,17 @@ export function CanvasView(props: CanvasViewProps){
             </div>
         </div>
     );
+
+    // Captures a thumbnail and navigates; called by every sidebar nav button so the stage
+    // is still mounted and stageRef.current is valid when we read it.
+    function captureAndGoACB(navigate: () => void): void {
+        props.onCaptureThumbnail(captureStageThumb(stageRef.current));
+        navigate();
+    }
+    function homeClickACB(){ captureAndGoACB(props.onHomeClick); }
+    function galleryClickACB(){ captureAndGoACB(props.onGalleryClick); }
+    function myWorkClickACB(){ captureAndGoACB(props.onMyWorkClick); }
+    function profileClickACB(){ captureAndGoACB(props.onProfileClick); }
 
     function listenToDeleteKeyACB(){
         window.addEventListener("keydown", keyDownACB);

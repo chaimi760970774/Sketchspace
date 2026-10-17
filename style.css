@@ -363,6 +363,57 @@ button { font: inherit; cursor: pointer; }
 .fill-color { width: 40px; height: 40px; border: none; background: none; padding: 0; }
 .action-hint { font-size: 14px; color: #777; text-align: center; margin-top: -20px; }
 
+/* ========== Color Wheel Picker ========== */
+.cw-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    user-select: none;
+}
+/* Hue ring: conic-gradient masked to a ring using CSS radial-gradient mask */
+.cw-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+        hsl(0,100%,50%), hsl(15,100%,50%), hsl(30,100%,50%), hsl(45,100%,50%),
+        hsl(60,100%,50%), hsl(75,100%,50%), hsl(90,100%,50%), hsl(105,100%,50%),
+        hsl(120,100%,50%), hsl(135,100%,50%), hsl(150,100%,50%), hsl(165,100%,50%),
+        hsl(180,100%,50%), hsl(195,100%,50%), hsl(210,100%,50%), hsl(225,100%,50%),
+        hsl(240,100%,50%), hsl(255,100%,50%), hsl(270,100%,50%), hsl(285,100%,50%),
+        hsl(300,100%,50%), hsl(315,100%,50%), hsl(330,100%,50%), hsl(345,100%,50%),
+        hsl(360,100%,50%)
+    );
+    /* punch a transparent hole in the centre to make it a ring */
+    -webkit-mask: radial-gradient(circle, transparent var(--cw-inner-r), black calc(var(--cw-inner-r) + 1px));
+            mask: radial-gradient(circle, transparent var(--cw-inner-r), black calc(var(--cw-inner-r) + 1px));
+    cursor: crosshair;
+}
+/* Small circular drag handle shown on both the ring and the sat/val square */
+.cw-handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.35);
+    pointer-events: none;
+}
+/* Editable hex value shown below the wheel */
+.cw-hex {
+    width: 90px;
+    padding: 4px 8px;
+    border: 1.5px solid #ccc;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 13px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+.cw-hex:focus { border-color: #f4a261; box-shadow: 0 0 0 3px rgba(244,162,97,0.15); }
+
 
 .canvas-main { flex: 1; background: white; padding: 30px 40px; display: flex; flex-direction: column; gap: 24px; }
 .canvas-topbar { display: flex; align-items: center; gap: 20px; }

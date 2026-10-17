@@ -1,4 +1,5 @@
 import "/style.css"
+import { BannerCollageView } from "./bannerCollageView";
 import { formatDate } from "/src/utils/formatDate.ts";
 import type { ChangeEvent, KeyboardEvent } from "react";
 import type { Canvas } from "/src/model/types.ts";
@@ -22,12 +23,7 @@ interface GalleryViewProps {
 export function GalleryView(props: GalleryViewProps){
     return (
         <div>
-            <div className="hero">
-                <h1 className="hero-title">Let's Make Collage Together!</h1>
-                <button className="outline-button" disabled={props.creating} onClick={props.onNewCanvas}>
-                    {props.creating ? "Creating..." : "Start doodling"}
-                </button>
-            </div>
+            <BannerCollageView creating={props.creating} onStart={props.onNewCanvas}/>
 
             <div className="page-content">
                 <input className="search-input" placeholder="Search" aria-label="Search canvases"

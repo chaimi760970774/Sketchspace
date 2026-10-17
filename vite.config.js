@@ -9,8 +9,13 @@ export default defineConfig(({ command }) => ({
     ],
     server: {
         port: 8080,
+        host: true,
         // Google's sign-in popup talks back to this page with postMessage; Google recommends this value
         headers: { 'Cross-Origin-Opener-Policy': 'same-origin-allow-popups' },
+        proxy: {
+            '/api': { target: 'http://localhost:3000', changeOrigin: true },
+            '/socket.io': { target: 'http://localhost:3000', ws: true, changeOrigin: true },
+        },
     },
     build: {
         sourcemap: true,

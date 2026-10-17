@@ -42,7 +42,7 @@ type End = string | { x: number; y: number };       // a piece id or a fixed poi
 const LINES: { from: End; to: End; bend: number }[] = [
     { from: "bench", to: "piano", bend: -70 },
     { from: "bench", to: TITLE_LEFT_TOP, bend: 40 },
-    { from: "egg", to: TITLE_LEFT_LOW, bend: -30 },
+    // { from: "egg", to: TITLE_LEFT_LOW, bend: -30 },
     { from: "piano", to: TITLE_RIGHT_TOP, bend: 40 },
     { from: "arm", to: TITLE_RIGHT_LOW, bend: -30 },
     { from: "apple", to: "arm", bend: 40 },

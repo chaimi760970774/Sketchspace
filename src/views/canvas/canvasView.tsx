@@ -1,5 +1,6 @@
 import "/style.css"
 import { useRef, useEffect } from "react";
+import { UserPlus } from "lucide-react";
 import type { ReactNode, RefObject, ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import type Konva from "konva";
 import type { PhotoCredit, SaveStatus, Tool } from "/src/model/types.ts";
@@ -78,7 +79,7 @@ export function CanvasView(props: CanvasViewProps){
 
                 {/* tool panel — floats above the canvas when a tool is active */}
                 {props.currentTool !== null && (
-                    <div className="tool-panel" onMouseDown={props.onToolPanelPress}>
+                    <div className="tool-panel" onMouseDown={e => { e.stopPropagation(); props.onToolPanelPress(); }}>
                         {props.children}
                     </div>
                 )}
@@ -93,8 +94,9 @@ export function CanvasView(props: CanvasViewProps){
 
                     <div className="canvas-title-group">
                         {renderName()}
-                        {renderSaveStatus()}
                     </div>
+
+                    {renderSaveStatus()}
 
                     <div className="topbar-right">
                         {props.isOwner &&
@@ -103,8 +105,8 @@ export function CanvasView(props: CanvasViewProps){
                         <button className="small-button" onClick={exportACB}>Export</button>
                         <div className="coming-soon-group">
                             <button className="small-button" disabled={props.busy} onClick={props.onShare}
-                                    title="Share this canvas with others">
-                                Share
+                                    title="Invite others to this canvas">
+                                <UserPlus size={16} />
                             </button>
                             <span className="coming-soon">{props.isShared ? "Shared in Gallery" : "Private"}</span>
                         </div>

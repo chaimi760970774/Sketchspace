@@ -261,28 +261,11 @@ export const openCanvasModel = {
     },
 
     // Sharing
-    // Share button: shares a private canvas (owner only), then opens the popup with the canvas id
-    openShareDialog(): Promise<void> {
-        const model = this;
-        const canvas = this.currentCanvas;
-        if (!canvas) return Promise.resolve();
-        const sharedCanvasId = canvas._id;      // kept for afterSaveACB below, which runs later
+    // Invite button: opens the popup so the user can choose shared or private
+    openShareDialog(): void {
+        if (!this.currentCanvas) return;
         this.shareCopied = false;
-        if (canvas.isShared) {
-            this.shareDialogOpen = true;
-            return Promise.resolve();
-        }
-        if (!this.isCurrentCanvasOwner()) {
-            this.showToast("Only the owner can share this canvas", "error");
-            return Promise.resolve();
-        }
-        return this.saveCanvasChanges(canvas._id, { isShared: true }, "Canvas is now shared in the Gallery").then(afterSaveACB);
-
-        // saveCanvasChanges reports its own failure: only open the popup if the canvas is shared now
-        function afterSaveACB(): void {
-            const open = model.currentCanvas;
-            if (open && open._id === sharedCanvasId && open.isShared) model.shareDialogOpen = true;
-        }
+        this.shareDialogOpen = true;
     },
     closeShareDialog(): void { this.shareDialogOpen = false; },
 
@@ -297,11 +280,15 @@ export const openCanvasModel = {
         return navigator.clipboard.writeText(canvasId).then(copiedACB, copyFailedACB);
     },
 
-    // "Make private" in the popup: everyone else is removed from the canvas
-    makeCurrentCanvasPrivate(): Promise<void> {
-        this.closeShareDialog();
-        if (!this.currentCanvas) return Promise.resolve();
-        return this.setCanvasShared(this.currentCanvas._id, false);
+    // Toggle in the popup: flip shared ↔ private (owner only)
+    toggleCanvasShared(): Promise<void> {
+        const canvas = this.currentCanvas;
+        if (!canvas) return Promise.resolve();
+        if (!this.isCurrentCanvasOwner()) {
+            this.showToast("Only the owner can change sharing", "error");
+            return Promise.resolve();
+        }
+        return this.setCanvasShared(canvas._id, !canvas.isShared);
     },
 
     // only the owner (the account, or whoever holds the token) can change sharing; the server says if the account owns it

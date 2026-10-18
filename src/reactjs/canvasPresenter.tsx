@@ -127,11 +127,12 @@ const Canvas = observer(// observer needed for the presenter to update (its view
 
             {props.model.shareDialogOpen &&
                 <ShareDialogView canvasId={canvas._id}
+                                 isShared={canvas.isShared}
                                  copied={props.model.shareCopied}
                                  isOwner={props.model.isCurrentCanvasOwner()}
                                  busy={props.model.isCanvasBusy(canvas._id)}
                                  onCopy={handlerCopyIdACB}
-                                 onMakePrivate={handlerMakePrivateACB}
+                                 onToggleShared={handlerToggleSharedACB}
                                  onClose={handlerShareCloseACB}/>}
 
             {props.model.photoSearchOpen &&
@@ -230,7 +231,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerClearACB(){ props.model.clearCanvas(); }
         function handlerShareACB(){ props.model.openShareDialog(); }
         function handlerCopyIdACB(){ props.model.copyCanvasId(); }
-        function handlerMakePrivateACB(){ props.model.makeCurrentCanvasPrivate(); }
+        function handlerToggleSharedACB(){ props.model.toggleCanvasShared(); }
         function handlerShareCloseACB(){ props.model.closeShareDialog(); }
         function handlerExportACB(succeeded: boolean){ props.model.showExportResult(succeeded); }
         function handlerDeleteACB(){ props.model.deleteSelection(); }

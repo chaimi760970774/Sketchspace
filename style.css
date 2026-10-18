@@ -441,7 +441,7 @@ button { font: inherit; cursor: pointer; }
 .cw-hex:focus { border-color: #f4a261; box-shadow: 0 0 0 3px rgba(244,162,97,0.15); }
 
 
-.canvas-main { flex: 1; background: white; padding: 16px 40px; display: flex; flex-direction: column; gap: 24px; }
+.canvas-main { flex: 1; background: white; padding: 10px 40px; display: flex; flex-direction: column; gap: 16px; }
 .canvas-topbar { display: flex; align-items: center; gap: 20px; }
 .collaborators { display: flex; align-items: center; }
 .collaborator-avatar {
@@ -506,16 +506,16 @@ button { font: inherit; cursor: pointer; }
     border: 1px dashed transparent;
     border-radius: 6px;
     padding: 2px 6px;
-    font-size: 20px;
+    font-size: 17px;
     font-weight: bold;
     text-align: left;
     transition: border-color 0.15s ease;
 }
 .canvas-name:hover { border-color: #f4a261; }
 .canvas-name-input {
-    font-size: 20px;
+    font-size: 17px;
     padding: 2px 6px;
-    width: 220px;
+    width: 190px;
     border: 1.5px solid #ccc;
     border-radius: 6px;
     outline: none;
@@ -745,7 +745,26 @@ button { font: inherit; cursor: pointer; }
 .share-modal { width: 520px; }
 .share-id-row { display: flex; gap: 12px; align-items: center; }
 .share-id-row .search-input { font-family: monospace; font-size: 16px; }
-.share-private-row { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+.share-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 4px 0; }
+.share-toggle-label { font-size: 15px; font-weight: 600; color: #333; }
+.share-toggle-hint { font-size: 13px; color: #888; margin-top: 2px; }
+
+/* Toggle switch */
+.toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; cursor: pointer; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: #ccc; border-radius: 24px; transition: background 0.2s; }
+.toggle-slider::before {
+    content: "";
+    position: absolute;
+    width: 18px; height: 18px;
+    left: 3px; top: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+.toggle-switch input:checked + .toggle-slider { background: #f4a261; }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+.toggle-switch input:disabled + .toggle-slider { opacity: 0.5; cursor: not-allowed; }
 
 /* ========== Login errors ========== */
 .login-error { grid-column: 2; }
@@ -760,6 +779,9 @@ button { font: inherit; cursor: pointer; }
     padding: 16px 0;
     gap: 4px;
     flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
 }
 
 .canvas-tool-btn {

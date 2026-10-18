@@ -21,7 +21,7 @@ export function CanvasToolbarView(props: CanvasToolbarViewProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     return (
-        <div className="canvas-toolbar">
+        <div className="canvas-toolbar" onMouseDown={e => e.stopPropagation()}>
             <button className={btnClass("shape")} title="Shapes" onClick={() => props.onToolClick("shape")}>
                 <Stamp size={22} />
             </button>

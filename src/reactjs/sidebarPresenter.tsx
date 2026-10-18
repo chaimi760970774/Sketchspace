@@ -13,7 +13,6 @@ const Sidebar = observer(// observer needed for the presenter to update (its vie
             currentPath={location.pathname}
             onLogoClick={() => navigate("/")}
             onGalleryClick={() => navigate("/gallery")}
-            onMyWorkClick={() => navigate("/mywork")}
             onProfileClick={() => navigate("/profile")}
         />;
     }

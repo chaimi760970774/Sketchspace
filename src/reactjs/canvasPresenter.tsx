@@ -60,6 +60,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         return (
             <>
             <CanvasView currentTool={props.model.currentTool}
+                        toolPanelOpen={props.model.toolPanelOpen}
                         liveStatus={props.model.liveStatus}
                         peerCount={props.model.peerCount}
                         liveLabel={props.model.getLiveLabel()}
@@ -81,7 +82,6 @@ const Canvas = observer(// observer needed for the presenter to update (its view
 
                         onHomeClick={handlerHomeACB}
                         onGalleryClick={handlerGalleryClickACB}
-                        onMyWorkClick={handlerMyWorkClickACB}
                         onProfileClick={() => navigate("/profile")}
                         onRenameStart={handlerRenameStartACB}
                         onNameDraftChange={handlerNameDraftChangeACB}
@@ -213,7 +213,6 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerOpenRetryACB(){ if (canvasId) props.model.loadCanvas(canvasId); }
         function handlerHomeACB(){ navigate("/"); }
         function handlerGalleryClickACB(){ navigate("/gallery"); }
-        function handlerMyWorkClickACB(){ navigate("/mywork"); }
 
         function handlerToolClickACB(tool: Tool){ props.model.setCurrentTool(tool); }
 

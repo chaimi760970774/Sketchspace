@@ -1,5 +1,4 @@
 import { Gallery } from "./galleryPresenter.tsx";
-import { MyWork } from "./myWorkPresenter.tsx";
 import { Profile } from "./profilePresenter.tsx";
 import { Canvas } from "./canvasPresenter.tsx";
 import { Login } from "./loginPresenter.tsx";
@@ -56,10 +55,6 @@ export function makeRouter(model: Model): Router {
                 {
                     path: "gallery",
                     element: <Gallery model={model} />,
-                },
-                {
-                    path: "mywork",
-                    element: <MyWork model={model} />,
                 },
                 {
                     path: "profile",

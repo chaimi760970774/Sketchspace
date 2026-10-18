@@ -13,7 +13,8 @@ const ELEMENT_LABELS: Record<CanvasElement["type"], string> = { photo: "Photo", 
 
 interface CanvasState {
     // Tools
-    currentTool: Tool | null;       // the icon toolbar; null = no panel open
+    currentTool: Tool | null;       // active tool; null = no tool selected (selection mode)
+    toolPanelOpen: boolean;         // whether the tool settings panel is visible
     eraserOn: boolean;              // the topbar eraser button; while on, clicks and drags erase whatever the left panel shows
     eraserTarget: "strokes" | "elements" | null;    // what the current erasing drag deletes, null before the first hit
     eyedropperOn: boolean;          // when on, the next canvas click samples the pixel colour into strokeColor
@@ -45,6 +46,7 @@ interface CanvasState {
 
 const initialState: CanvasState = {
     currentTool: null,
+    toolPanelOpen: false,
     eraserOn: false,
     eraserTarget: null,
     eyedropperOn: false,
@@ -101,7 +103,13 @@ export const canvasModel = {
 
     // Tools
     setCurrentTool(tool: Tool): void {
+        if (tool === "stroke" && this.currentTool === "stroke") {
+            // re-clicking brush: collapse/expand the panel while staying in drawing mode
+            this.toolPanelOpen = !this.toolPanelOpen;
+            return;
+        }
         this.currentTool = this.currentTool === tool ? null : tool;
+        this.toolPanelOpen = this.currentTool !== null;
         this.eraserOn = false;      // choosing a tool switches the eraser off
         this.eyedropperOn = false;  // choosing a tool switches the eyedropper off
         // with the stroke tool, clicks draw instead of select, so nothing stays selected

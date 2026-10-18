@@ -27,7 +27,7 @@ export function ShareDialogView(props: ShareDialogViewProps){
                     <div className="share-toggle-row">
                         <div>
                             <div className="share-toggle-label">
-                                {props.isShared ? "Shared in Gallery" : "Private"}
+                                {props.isShared ? "Shared" : "Private"}
                             </div>
                             <div className="share-toggle-hint">
                                 {props.isShared
@@ -45,13 +45,13 @@ export function ShareDialogView(props: ShareDialogViewProps){
 
                 {!props.isOwner && (
                     <p className="share-toggle-hint">
-                        {props.isShared ? "This canvas is shared in the Gallery." : "This canvas is private."}
+                        {props.isShared ? "This canvas is shared." : "This canvas is private."}
                     </p>
                 )}
 
                 {props.isShared && (
                     <>
-                        <p>Send this canvas id to anyone. They paste it into <b>Join canvas</b> on the Gallery page to draw with you.</p>
+                        <p>Send this canvas id to anyone. They can paste it into <b>Draw together with others</b> on the Gallery page to join you.</p>
                         <div className="share-id-row">
                             <input className="search-input" readOnly aria-label="Canvas id" value={props.canvasId} onFocus={focusACB}/>
                             <button className="small-button" onClick={props.onCopy}>{props.copied ? "Copied ✓" : "Copy"}</button>

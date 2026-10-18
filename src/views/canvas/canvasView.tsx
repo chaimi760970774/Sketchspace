@@ -14,6 +14,7 @@ const TEXT_FIELD_TAGS = ["INPUT", "TEXTAREA", "SELECT"];
 
 interface CanvasViewProps {
     currentTool: Tool | null;
+    toolPanelOpen: boolean;
     liveStatus: LiveStatus;
     peerCount: number;
     liveLabel: string;
@@ -37,7 +38,6 @@ interface CanvasViewProps {
     renderToolbar: () => ReactNode;
     onHomeClick: () => void;
     onGalleryClick: () => void;
-    onMyWorkClick: () => void;
     onProfileClick: () => void;
     onRenameStart: () => void;
     onNameDraftChange: (name: string) => void;
@@ -68,17 +68,16 @@ export function CanvasView(props: CanvasViewProps){
             {/* main nav sidebar — unchanged on canvas page */}
             <div className="sidebar">
                 <LogoView onClick={homeClickACB}/>
-                <button className="sidebar-item" onClick={galleryClickACB}>gallery</button>
-                <button className="sidebar-item" onClick={myWorkClickACB}>My Work</button>
-                <button className="sidebar-item sidebar-bottom" onClick={profileClickACB}>Profile</button>
+                <button className="sidebar-item" onClick={galleryClickACB}>Gallery</button>
+                <button className="sidebar-item" onClick={profileClickACB}>Profile</button>
             </div>
 
             <div className="canvas-wrapper" onMouseDown={deselectACB}>
                 {/* narrow icon toolbar */}
                 {props.renderToolbar()}
 
-                {/* tool panel — floats above the canvas when a tool is active */}
-                {props.currentTool !== null && (
+                {/* tool panel — floats above the canvas when a tool is active and its panel is open */}
+                {props.toolPanelOpen && (
                     <div className="tool-panel" onMouseDown={e => { e.stopPropagation(); props.onToolPanelPress(); }}>
                         {props.children}
                     </div>
@@ -132,7 +131,6 @@ export function CanvasView(props: CanvasViewProps){
     }
     function homeClickACB(){ captureAndGoACB(props.onHomeClick); }
     function galleryClickACB(){ captureAndGoACB(props.onGalleryClick); }
-    function myWorkClickACB(){ captureAndGoACB(props.onMyWorkClick); }
     function profileClickACB(){ captureAndGoACB(props.onProfileClick); }
 
     function listenToDeleteKeyACB(){

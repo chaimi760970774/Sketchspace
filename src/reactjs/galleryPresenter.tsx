@@ -73,7 +73,7 @@ const Gallery = observer(// observer needed for the presenter to update (its vie
         }
 
         // the canvas is created on the server first, then opened
-        function handlerNewCanvasACB(){ props.model.createNewCanvas().then(openCanvasACB); }
+        function handlerNewCanvasACB(){ props.model.createNewCanvas(props.model.selectedFolderId).then(openCanvasACB); }
         function openCanvasACB(canvasId: string | null){ if (canvasId) navigate(`/canvas/${canvasId}`); }
 
         function handlerCardClickACB(canvas: Canvas){ navigate(`/canvas/${canvas._id}`); }

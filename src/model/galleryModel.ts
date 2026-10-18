@@ -259,15 +259,16 @@ export const galleryModel = {
 
     // Creating
     // resolves to the new canvas id, or null if it failed (the user has been told already)
-    createNewCanvas(): Promise<string | null> {
+    createNewCanvas(folderId?: string | null): Promise<string | null> {
         if (this.creatingCanvas) return Promise.resolve(null);      // ignore double clicks
         const model = this;
         this.creatingCanvas = true;
         this.createCanvasError = "";
         return createCanvas({ name: "untitled" }).then(createdACB).catch(failedACB).finally(doneACB);
 
-        function createdACB(canvasId: string): string {
+        function createdACB(canvasId: string): Promise<string> | string {
             model.showToast("New canvas created", "success");
+            if (folderId) return setCanvasFolderRequest(canvasId, folderId).then(() => canvasId).catch(() => canvasId);
             return canvasId;
         }
         function failedACB(error: Error): null {

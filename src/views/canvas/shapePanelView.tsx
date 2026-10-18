@@ -50,7 +50,19 @@ export function ShapePanelView(props: ShapePanelViewProps){
                        aria-label={"Add " + shape} title={"Click or drag to add a " + shape}
                        draggable="true" onDragStart={shapeDragStartACB}
                        onClick={clickShapeACB}>
-            <span className={"shape-icon shape-icon-" + shape}></span>
+            {shapeIconSVG(shape)}
         </button>;
+    }
+
+    function shapeIconSVG(shape: ShapeName){
+        const common = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeDasharray: "4 3", strokeLinecap: "round" as const };
+        return (
+            <svg className="shape-icon" viewBox="0 0 52 52" aria-hidden="true">
+                {shape === "circle"   && <circle cx="26" cy="26" r="22" {...common}/>}
+                {shape === "square"   && <rect x="4" y="4" width="44" height="44" {...common}/>}
+                {shape === "triangle" && <polygon points="26,3 49,49 3,49" strokeLinejoin="round" {...common}/>}
+                {shape === "star"     && <polygon points="26,3 31.1,19.1 48.1,19.1 34.3,29.2 39.3,44.9 26,35.2 12.7,44.9 17.7,29.2 3.9,19.1 20.9,19.1" strokeLinejoin="round" {...common}/>}
+            </svg>
+        );
     }
 }

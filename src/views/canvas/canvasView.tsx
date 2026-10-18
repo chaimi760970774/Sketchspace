@@ -26,8 +26,11 @@ interface CanvasViewProps {
     nameError: string;
     saveStatus: SaveStatus | "";            // "" when there is nothing on the canvas
     canDelete: boolean;
+    onDeselect: () => void;
     eraserOn: boolean;
     eyedropperOn: boolean;
+    canUndo: boolean;
+    canRedo: boolean;
     children: ReactNode;                    // the tool panel content
     renderBoard: (stageRef: RefObject<Konva.Stage | null>) => ReactNode;
     renderToolbar: () => ReactNode;
@@ -44,6 +47,8 @@ interface CanvasViewProps {
     onShare: () => void;
     onExport: (succeeded: boolean) => void;
     onDelete: () => void;
+    onUndo: () => void;
+    onRedo: () => void;
     onCaptureThumbnail: (dataUrl: string | null) => void;
 }
 
@@ -54,6 +59,8 @@ export function CanvasView(props: CanvasViewProps){
     // Delete / Backspace removes what is selected. The listener is removed again before the next
     // render adds a fresh one, and when the page closes, so there is never more than one.
     useEffect(listenToDeleteKeyACB, [props.canDelete, props.onDelete]);
+    useEffect(listenToUndoRedoKeysACB, [props.onUndo, props.onRedo]);
+    useEffect(listenToEscapeKeyACB, [props.onDeselect]);
 
     return (
         <div className="layout">
@@ -65,17 +72,18 @@ export function CanvasView(props: CanvasViewProps){
                 <button className="sidebar-item sidebar-bottom" onClick={profileClickACB}>Profile</button>
             </div>
 
-            {/* narrow icon toolbar */}
-            {props.renderToolbar()}
+            <div className="canvas-wrapper" onMouseDown={deselectACB}>
+                {/* narrow icon toolbar */}
+                {props.renderToolbar()}
 
-            {/* tool panel — only rendered when a tool is active */}
-            {props.currentTool !== null && (
-                <div className="tool-panel" onMouseDown={props.onToolPanelPress}>
-                    {props.children}
-                </div>
-            )}
+                {/* tool panel — floats above the canvas when a tool is active */}
+                {props.currentTool !== null && (
+                    <div className="tool-panel" onMouseDown={props.onToolPanelPress}>
+                        {props.children}
+                    </div>
+                )}
 
-            <div className="canvas-main">
+                <div className="canvas-main">
                 <div className="canvas-topbar">
                     <div className="collaborators" role="status" title="People in this canvas right now">
                         <span className={"live-dot live-" + props.liveStatus}></span>
@@ -109,6 +117,7 @@ export function CanvasView(props: CanvasViewProps){
                 {/* photographer credits for every photo on the canvas, required by Unsplash guidelines */}
                 {props.credits.length > 0 &&
                     <div className="canvas-credit">Photos by {props.credits.map(creditCB)} on Unsplash</div>}
+                </div>
             </div>
         </div>
     );
@@ -134,6 +143,34 @@ export function CanvasView(props: CanvasViewProps){
             if (!props.canDelete || isTyping(evt.target)) return;
             evt.preventDefault();       // Backspace must not do anything else in the browser
             props.onDelete();
+        }
+    }
+    function deselectACB(){ props.onDeselect(); }
+
+    function listenToEscapeKeyACB(){
+        window.addEventListener("keydown", keyDownACB);
+        return stopListeningACB;
+
+        function stopListeningACB(){ window.removeEventListener("keydown", keyDownACB); }
+        function keyDownACB(evt: KeyboardEvent){
+            if (evt.key !== "Escape" || isTyping(evt.target)) return;
+            props.onDeselect();
+        }
+    }
+    function listenToUndoRedoKeysACB(){
+        window.addEventListener("keydown", keyDownACB);
+        return stopListeningACB;
+
+        function stopListeningACB(){ window.removeEventListener("keydown", keyDownACB); }
+        function keyDownACB(evt: KeyboardEvent){
+            if (!evt.ctrlKey || isTyping(evt.target)) return;
+            if (!evt.shiftKey && evt.key === "z") {
+                evt.preventDefault();
+                props.onUndo();
+            } else if (evt.key === "y" || (evt.shiftKey && evt.key === "Z")) {
+                evt.preventDefault();
+                props.onRedo();
+            }
         }
     }
     function isTyping(target: EventTarget | null){

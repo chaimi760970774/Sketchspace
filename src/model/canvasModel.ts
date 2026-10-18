@@ -237,7 +237,8 @@ export const canvasModel = {
     isCanvasOpenNow(canvasId: string): boolean { return Boolean(this.currentCanvas) && this.currentCanvas?._id === canvasId; },
 
     // over the socket when joined, otherwise REST
-    saveNewElement(element: CanvasElement): void {
+    // onSaved: if provided, called with the real element id instead of pushing to the undo stack
+    saveNewElement(element: CanvasElement, onSaved?: (id: string) => void): void {
         if (!this.currentCanvas) return;
         const model = this;
         const canvasId = this.currentCanvas._id;
@@ -263,6 +264,12 @@ export const canvasModel = {
             const pending = model.pendingElementChanges[temporaryId];
             model.pendingElementChanges = withoutPending(model.pendingElementChanges, temporaryId);
             if (pending) model.sendElementChanges(elementId, pending, {});
+
+            if (onSaved) {
+                onSaved(elementId);
+            } else {
+                model.pushUndoOp({ type: "removeElement", elementId });
+            }
         }
         function failedACB(error: Error): void {
             if (!model.isCanvasOpenNow(canvasId)) return;
@@ -289,6 +296,26 @@ export const canvasModel = {
             height,
             rotation: 0,
         });
+    },
+
+    addLocalPhotoElement(dataUrl: string, ratio: number): void {
+        const width = 200;
+        const height = width * ratio;
+        const newElement: CanvasElement = {
+            id: crypto.randomUUID(),
+            type: "photo",
+            url: dataUrl,
+            x: CANVAS_WIDTH / 2 - width / 2,
+            y: CANVAS_HEIGHT / 2 - height / 2,
+            width,
+            height,
+            rotation: 0,
+            zIndex: this.getNextZIndex(),
+            status: "local",
+        };
+        this.elements = [...this.elements, newElement];
+        this.selectedElementId = newElement.id;
+        this.pushUndoOp({ type: "removeElement", elementId: newElement.id });
     },
 
     addShapeElement(shape: string, position: Point): void {
@@ -318,12 +345,14 @@ export const canvasModel = {
         const previous = previousValues(element, changes);
 
         this.changeElementLocally(id, changes);
+        this.pushUndoOp({ type: "updateElement", elementId: id, changes: previous });
         if (!this.currentCanvas) return;
         // still saving: no real id yet
         if (element.status === "saving") {
             this.pendingElementChanges = { ...this.pendingElementChanges, [id]: { ...this.pendingElementChanges[id], ...changes } };
             return;
         }
+        if (element.status === "local") return;
         this.sendElementChanges(id, changes, previous);
     },
     sendElementChanges(id: string, changes: ElementChanges, previous: ElementChanges): void {
@@ -371,6 +400,8 @@ export const canvasModel = {
         const position = this.elements.findIndex(isTargetCB);
         this.removeElementLocally(id);
         if (!quiet) this.showToast(ELEMENT_LABELS[element.type] + " deleted", "success");
+        this.pushUndoOp({ type: "restoreElement", element: removed });
+        if (element.status === "local") return;
         if (!this.currentCanvas) return;
 
         const canvasId = this.currentCanvas._id;
@@ -383,6 +414,21 @@ export const canvasModel = {
             model.showToast("Could not delete the " + ELEMENT_LABELS[removed.type].toLowerCase() + " (" + error.message + "), it was put back", "error");
         }
     },
+    // Re-adds a previously deleted element to the server. Used by undo/redo.
+    // onSaved receives the new server id; no pushUndoOp is called here (caller handles the stack via callback).
+    restoreElement(element: CanvasElement, onSaved?: (id: string) => void): void {
+        const newId = crypto.randomUUID();
+        if (element.status === "local") {
+            const newElement: CanvasElement = { ...element, id: newId, zIndex: this.getNextZIndex(), status: "local" };
+            this.elements = [...this.elements, newElement];
+            if (onSaved) onSaved(newId);
+            return;
+        }
+        const newElement: CanvasElement = { ...element, id: newId, zIndex: this.getNextZIndex(), status: "saving" };
+        this.elements = [...this.elements, newElement];
+        this.saveNewElement(newElement, onSaved);
+    },
+
     removeElementLocally(id: string): void {
         function isOtherCB(other: CanvasElement): boolean { return other.id !== id; }
         this.elements = this.elements.filter(isOtherCB);

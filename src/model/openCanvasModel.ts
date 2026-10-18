@@ -1,6 +1,6 @@
 import { resolvePromise, isPending } from "/src/utils/resolvePromise.ts";
 import { getCanvas, listStrokes, listElements, addStroke, deleteStroke, clearStrokes } from "/src/api/canvasSource.ts";
-import { startSocket, stopSocket, isSocketConnected, joinCanvas, leaveCanvas, sendStroke, deleteStrokeLive, clearCanvasStrokes } from "/src/api/socketSource.ts";
+import { startSocket, stopSocket, joinCanvas, leaveCanvas, sendStroke, deleteStrokeLive, clearCanvasStrokes } from "/src/api/socketSource.ts";
 import { getOwnerToken, isCanvasOwner } from "/src/api/canvasSource.ts";
 import { toLocalElement } from "/src/utils/elementFields.ts";
 import { validateStroke } from "/src/utils/validateStroke.ts";
@@ -104,6 +104,7 @@ export const openCanvasModel = {
                 model.currentCanvas = results[0];
                 model.strokes = results[1].map(toSavedStroke);
                 model.elements = results[2].map(toLocalElement);
+                model.clearHistory();
                 model.joinLiveCanvas(canvasId);
             }
             return true;    // resolvePromise needs a truthy result, otherwise it still looks like loading
@@ -351,6 +352,7 @@ export const openCanvasModel = {
             }
             // the stroke may have been selected while saving: keep it selected under its new id
             if (model.selectedElementId === temporaryId) model.selectedElementId = strokeId;
+            model.pushUndoOp({ type: "removeStroke", strokeId });
         }
         function failedACB(error: Error): void {
             updateThisStroke({ status: "failed" });
@@ -382,6 +384,7 @@ export const openCanvasModel = {
             model.clearStrokesLocally();
             function removeElementCB(element: CanvasElement): void { model.removeElement(element.id, true); }
             savedElements.forEach(removeElementCB);
+            model.clearHistory();
             const total = removedStrokes + savedElements.length;
             model.showToast("Cleared " + total + (total === 1 ? " item" : " items")
                 + (stillSaving ? ", " + stillSaving + " still saving, clear again" : ""), "success");
@@ -423,6 +426,8 @@ export const openCanvasModel = {
             return;
         }
 
+        this.pushUndoOp({ type: "restoreStroke", stroke: removed });
+
         if (!this.currentCanvas) return;
         const canvasId = this.currentCanvas._id;
         const deleting = this.isLive() ? deleteStrokeLive(strokeId) : deleteStroke(canvasId, strokeId);
@@ -439,6 +444,47 @@ export const openCanvasModel = {
             function wasBeforeCB(other: Stroke): boolean { return idsBefore.includes(other.id); }
             const position = model.strokes.filter(wasBeforeCB).length;
             model.strokes = [...model.strokes.slice(0, position), removed, ...model.strokes.slice(position)];
+        }
+    },
+
+    // Re-adds a previously deleted stroke to the server. Used by undo/redo.
+    // onSaved receives the new server id once the stroke is saved; no pushUndoOp is called here
+    // (the caller supplies the callback to keep the history stack correct).
+    restoreStroke(stroke: Stroke, onSaved?: (strokeId: string) => void): void {
+        if (!this.currentCanvas) return;
+        const model = this;
+        const newStroke: NewStroke = {
+            canvasId: this.currentCanvas._id,
+            layerId: stroke.layerId,
+            path: stroke.path,
+            brush: stroke.brush,
+            size: stroke.size,
+            color: stroke.color,
+            opacity: stroke.opacity,
+        };
+        const temporaryId = "unsaved-" + crypto.randomUUID();
+        this.strokes = [...this.strokes, { ...newStroke, id: temporaryId, status: "saving" }];
+        const isLive = this.liveStatus === "live" && this.joinedCanvasId === newStroke.canvasId;
+        const sending = isLive ? sendStroke(newStroke) : addStroke(newStroke.canvasId, newStroke);
+        sending.then(savedACB).catch(failedACB);
+
+        function updateThisStroke(changes: Partial<Stroke>): void {
+            function updateCB(other: Stroke): Stroke { return other.id === temporaryId ? { ...other, ...changes } : other; }
+            model.strokes = model.strokes.map(updateCB);
+        }
+        function isNotTemporaryCB(other: Stroke): boolean { return other.id !== temporaryId; }
+        function savedACB(strokeId: string): void {
+            if (model.findStroke(strokeId)) {
+                model.strokes = model.strokes.filter(isNotTemporaryCB);
+            } else {
+                updateThisStroke({ id: strokeId, status: "saved" });
+            }
+            if (model.selectedElementId === temporaryId) model.selectedElementId = strokeId;
+            onSaved?.(strokeId);
+        }
+        function failedACB(error: Error): void {
+            updateThisStroke({ status: "failed" });
+            model.showToast("A stroke could not be restored (" + error.message + "), it is shown faded", "error");
         }
     },
 

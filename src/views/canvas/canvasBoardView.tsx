@@ -1,6 +1,6 @@
 import "/style.css"
 import { useRef, useEffect, useState } from "react";
-import type { DragEvent as ReactDragEvent, RefObject } from "react";
+import type { DragEvent as ReactDragEvent, MouseEvent as ReactMouseEvent, RefObject } from "react";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type { CanvasElement, DraftStroke, ElementChanges, Point, Stroke, Tool } from "/src/model/types.ts";
@@ -45,6 +45,24 @@ export function CanvasBoardView(props: CanvasBoardViewProps){
     // stageRef comes from CanvasView, which uses it to export the picture
     const stageRef = props.stageRef;
     const transformerRef = useRef<Konva.Transformer>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [stageSize, setStageSize] = useState({ width: CANVAS_WIDTH, height: CANVAS_HEIGHT });
+
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const observer = new ResizeObserver(() => {
+            const style = getComputedStyle(el);
+            const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+            const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+            setStageSize({
+                width: Math.max(el.clientWidth - padX, 1),
+                height: Math.max(el.clientHeight - padY, 1),
+            });
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
 
     // Stroke tool: the points of the stroke being drawn right now, null when not drawing.
     // Kept in the view because it changes on every mouse move; the finished stroke goes to the model.
@@ -68,12 +86,28 @@ export function CanvasBoardView(props: CanvasBoardViewProps){
                      : isEyedropperTool ? "konva-stage eyedropping"
                      : "konva-stage";
 
+    // stop the mousedown from reaching the canvas-wrapper deselect handler; the board handles its own deselection
+    function stopPropagationACB(evt: ReactMouseEvent<HTMLDivElement>){ evt.stopPropagation(); }
+
+    // needed so the browser allows dropping
+    function dragOverACB(evt: ReactDragEvent<HTMLDivElement>){ evt.preventDefault(); }
+
+    function dropACB(evt: ReactDragEvent<HTMLDivElement>){
+        evt.preventDefault();
+        const stage = stageRef.current;
+        if (!stage) return;
+        stage.setPointersPositions(evt);                      // convert mouse position to canvas coordinates
+        const position = stage.getPointerPosition();
+        const type = evt.dataTransfer.getData("text/plain");  // set by the panel when dragging starts
+        if (position) props.onDropItem(type, position);
+    }
+
     return (
-        <div className="canvas-area" onDragOver={dragOverACB} onDrop={dropACB}>
+        <div ref={containerRef} className="canvas-area" onDragOver={dragOverACB} onDrop={dropACB} onMouseDown={stopPropagationACB}>
             <Stage ref={stageRef}
                    className={stageClass}
-                   width={CANVAS_WIDTH}
-                   height={CANVAS_HEIGHT}
+                   width={stageSize.width}
+                   height={stageSize.height}
                    onMouseDown={pointerDownACB}
                    onTouchStart={pointerDownACB}
                    onMouseMove={pointerMoveACB}
@@ -106,19 +140,6 @@ export function CanvasBoardView(props: CanvasBoardViewProps){
         const elementSelected = !isPassive && props.elements.some(isSelectedCB);
         const node = elementSelected ? stage.findOne("#" + props.selectedId) : undefined;
         transformer.nodes(node ? [node] : []);
-    }
-
-    // needed so the browser allows dropping
-    function dragOverACB(evt: ReactDragEvent<HTMLDivElement>){ evt.preventDefault(); }
-
-    function dropACB(evt: ReactDragEvent<HTMLDivElement>){
-        evt.preventDefault();
-        const stage = stageRef.current;
-        if (!stage) return;
-        stage.setPointersPositions(evt);                      // convert mouse position to canvas coordinates
-        const position = stage.getPointerPosition();
-        const type = evt.dataTransfer.getData("text/plain");  // set by the panel when dragging starts
-        if (position) props.onDropItem(type, position);
     }
 
     // where the pointer is on the canvas, null if Konva does not know (e.g. before the first move)

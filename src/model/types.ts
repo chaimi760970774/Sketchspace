@@ -6,6 +6,7 @@ import type { galleryModel } from "./galleryModel.ts";
 import type { canvasModel } from "./canvasModel.ts";
 import type { openCanvasModel } from "./openCanvasModel.ts";
 import type { toastModel } from "./toastModel.ts";
+import type { historyModel } from "./historyModel.ts";
 
 // The whole MobX model: all parts merged (see mobxReactiveModel.ts), as presenters receive it in props.model.
 // Each part declares the types of its own fields (the *State interface in each model file).
@@ -15,7 +16,8 @@ type GalleryPart = typeof galleryModel;
 type CanvasPart = typeof canvasModel;
 type OpenCanvasPart = typeof openCanvasModel;
 type ToastPart = typeof toastModel;
-export interface Model extends UserPart, GalleryPart, CanvasPart, OpenCanvasPart, ToastPart {}
+type HistoryPart = typeof historyModel;
+export interface Model extends UserPart, GalleryPart, CanvasPart, OpenCanvasPart, HistoryPart, ToastPart {}
 
 export interface PresenterProps {
     model: Model;
@@ -27,7 +29,7 @@ export interface Point {
 }
 
 // "saving" / "saved" / "failed" only exist in the frontend
-export type SaveStatus = "saving" | "saved" | "failed";
+export type SaveStatus = "saving" | "saved" | "failed" | "local";
 
 // the left panel of the canvas page
 export type Tool = "shape" | "stroke" | "photo";

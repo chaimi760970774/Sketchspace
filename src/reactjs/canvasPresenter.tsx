@@ -73,8 +73,11 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         nameError={props.model.canvasNameError}
                         saveStatus={props.model.getSaveStatus()}
                         canDelete={props.model.canDeleteSelection()}
+                        onDeselect={handlerDeselectACB}
                         eraserOn={props.model.eraserOn}
                         eyedropperOn={props.model.eyedropperOn}
+                        canUndo={props.model.canUndo()}
+                        canRedo={props.model.canRedo()}
 
                         onHomeClick={handlerHomeACB}
                         onGalleryClick={handlerGalleryClickACB}
@@ -89,6 +92,8 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                         onShare={handlerShareACB}
                         onExport={handlerExportACB}
                         onDelete={handlerDeleteACB}
+                        onUndo={handlerUndoACB}
+                        onRedo={handlerRedoACB}
                         onCaptureThumbnail={handlerCaptureThumbnailACB}
 
                         renderToolbar={renderToolbarCB}
@@ -156,9 +161,14 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                     currentTool={props.model.currentTool}
                     eraserOn={props.model.eraserOn}
                     eyedropperOn={props.model.eyedropperOn}
+                    canUndo={props.model.canUndo()}
+                    canRedo={props.model.canRedo()}
                     onToolClick={handlerToolClickACB}
                     onEraserClick={handlerEraserToggleACB}
                     onEyedropperClick={handlerEyedropperToggleACB}
+                    onUploadLocalFile={handlerUploadLocalFileACB}
+                    onUndo={handlerUndoACB}
+                    onRedo={handlerRedoACB}
                 />
             );
         }
@@ -224,6 +234,8 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerShareCloseACB(){ props.model.closeShareDialog(); }
         function handlerExportACB(succeeded: boolean){ props.model.showExportResult(succeeded); }
         function handlerDeleteACB(){ props.model.deleteSelection(); }
+        function handlerUndoACB(){ props.model.undo(); }
+        function handlerRedoACB(){ props.model.redo(); }
         function handlerCaptureThumbnailACB(dataUrl: string | null): void {
             if (canvasId && dataUrl) saveThumbnail(canvasId, dataUrl);
         }
@@ -244,6 +256,19 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         // shape panel
         function handlerShapeClickACB(shape: ShapeName){ props.model.addShapeAtCentre(shape); }
         function handlerUploadPhotoACB(){ props.model.openPhotoSearch(); }
+        function handlerUploadLocalFileACB(file: File): void {
+            const reader = new FileReader();
+            reader.onload = function(e): void {
+                const dataUrl = e.target?.result as string;
+                if (!dataUrl) return;
+                const img = new window.Image();
+                img.onload = function(): void {
+                    props.model.addLocalPhotoElement(dataUrl, img.naturalHeight / img.naturalWidth);
+                };
+                img.src = dataUrl;
+            };
+            reader.readAsDataURL(file);
+        }
         function handlerRemovePhotoACB(id: string){ props.model.removeSelectedPhoto(id); }
         function handlerCutACB(){ props.model.cutWithSelectedShape(); }
         function handlerFillACB(){ props.model.fillSelectedShape(); }

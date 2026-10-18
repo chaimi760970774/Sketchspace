@@ -131,7 +131,9 @@ export const openCanvasModel = {
             onElementDeleted: function elementDeletedACB(elementId: string): void { model.removeElementLocally(elementId); },
             onCleared: function clearedACB(): void { model.clearStrokesLocally(); model.showToast("The owner cleared the canvas", "info"); },
             onPeers: function peersACB(count: number): void { model.peerCount = count; },
-            onUnshared: function unsharedACB(): void { model.removedFromCanvas("unshared"); },
+            onUnshared: function unsharedACB(): void {
+                if (!model.isCurrentCanvasOwner()) model.removedFromCanvas("unshared");
+            },
             onDeleted: function deletedACB(): void { model.removedFromCanvas("deleted"); },
         });
         this.joinedCanvasId = canvasId;

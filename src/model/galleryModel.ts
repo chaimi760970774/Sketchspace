@@ -1,8 +1,11 @@
 import { resolvePromise, isPending } from "/src/utils/resolvePromise.ts";
 import { listCanvases, listMyCanvases, getCanvas, createCanvas, updateCanvas, deleteCanvas, getOwnedCanvasIds, isCanvasOwner, forgetOwnerToken,
          setCanvasFolder as setCanvasFolderRequest, claimCanvas } from "/src/api/canvasSource.ts";
+import { listStrokes, listElements } from "/src/api/canvasSource.ts";
+import { renderCanvasThumbnail } from "/src/utils/renderThumbnail.ts";
+import { getThumbnail, getThumbnailVersion, saveThumbnail } from "/src/utils/thumbnailStore.ts";
 import { listFolders, createFolder as createFolderRequest, deleteFolder as deleteFolderRequest } from "/src/api/folderSource.ts";
-import type { Canvas, CanvasChanges, Folder, Model, PromiseState, RequestError } from "./types.ts";
+import type { Canvas, CanvasChanges, Folder, Model, PromiseState, RequestError, ServerElement, ServerStroke } from "./types.ts";
 
 // same rule as the server: 1-30 characters after trimming, counted per character (an emoji is one)
 const MAX_FOLDER_NAME = 30;
@@ -16,6 +19,9 @@ interface GalleryState {
     // The logged-in account's folders, loaded from the server by loadFolders(); a guest has none.
     // Which folder a canvas is in is its own folderId.
     folders: Folder[];
+
+    // card previews made in this session (also kept in localStorage), by canvas id
+    thumbnails: Record<string, string>;
 
     // Page state
     canvasesPromiseState: PromiseState<Canvas[]>;   // loading the canvas list
@@ -43,6 +49,7 @@ const initialState: GalleryState = {
     canvases: [],
     myCanvasIds: [],
     folders: [],
+    thumbnails: {},
     canvasesPromiseState: {},
     foldersPromiseState: {},
     busyCanvasIds: [],
@@ -60,6 +67,9 @@ const initialState: GalleryState = {
     creatingFolder: false,
     busyFolderIds: [],
 };
+
+// canvases whose preview is being made right now
+const thumbnailsInProgress = new Set<string>();
 
 // the list being loaded, with the ids of the canvases the account owns
 interface LoadedList {
@@ -140,6 +150,7 @@ export const galleryModel = {
             if (isLatest()) {
                 model.canvases = list.canvases;
                 model.myCanvasIds = list.accountCanvasIds;
+                model.loadMissingThumbnails();
             }
             return list.canvases;
         }
@@ -147,6 +158,42 @@ export const galleryModel = {
             if (isLatest()) model.showToast("Could not load canvases: " + error.message, "error");
         }
     },
+    // The preview of a card; undefined/null until it is made. Reads this.thumbnails, so cards update by themselves.
+    getCardThumbnail(canvasId: string): string | null { return this.thumbnails[canvasId] || getThumbnail(canvasId); },
+
+    // Makes a preview for every listed canvas that has none (a canvas never opened in this browser, or
+    // changed by someone else since), by drawing its strokes and elements. One canvas at a time.
+    loadMissingThumbnails(): Promise<void> {
+        const model = this;
+        function needsThumbnailCB(canvas: Canvas): boolean {
+            if (thumbnailsInProgress.has(canvas._id)) return false;
+            return !getThumbnail(canvas._id) || (getThumbnailVersion(canvas._id) !== null && getThumbnailVersion(canvas._id) !== canvas.updatedAt);
+        }
+        function makeOneACB(previous: Promise<void>, canvas: Canvas): Promise<void> {
+            function makeACB(): Promise<void> { return model.makeThumbnail(canvas); }
+            return previous.then(makeACB);
+        }
+        function doneACB(): void {}
+        return this.canvases.filter(needsThumbnailCB).reduce(makeOneACB, Promise.resolve()).then(doneACB);
+    },
+
+    makeThumbnail(canvas: Canvas): Promise<void> {
+        const model = this;
+        thumbnailsInProgress.add(canvas._id);
+        function renderACB(results: [ServerStroke[], ServerElement[]]): Promise<string | null> {
+            return renderCanvasThumbnail(results[0], results[1]);
+        }
+        function storeACB(dataUrl: string | null): void {
+            if (!dataUrl) return;
+            saveThumbnail(canvas._id, dataUrl, canvas.updatedAt);
+            model.thumbnails[canvas._id] = dataUrl;
+        }
+        function cleanUpACB(): void { thumbnailsInProgress.delete(canvas._id); }
+        // a canvas that cannot be read just keeps the empty preview
+        return Promise.all([listStrokes(canvas._id), listElements(canvas._id)]).then(renderACB).then(storeACB).catch(ignoreACB).then(cleanUpACB);
+        function ignoreACB(): void {}
+    },
+
     isLoadingCanvases(): boolean { return isPending(this.canvasesPromiseState); },
     getCanvasesError(): string {
         const error = this.canvasesPromiseState.error;

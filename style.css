@@ -1,13 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 * { box-sizing: border-box; }
+html { scrollbar-gutter: stable; }      /* the page does not jump sideways when a scrollbar appears */
 body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; font-size: 15px; color: #1a1a1a; background: #f5f5f5; }
 button { font: inherit; cursor: pointer; }
 
 
 /* ========== Shared layout ========== */
 .layout { display: flex; min-height: 100vh; }
-.main-content { flex: 1; background: white; }
+.main-content { flex: 1; min-width: 0; background: white; }
 .page-content { padding: 40px 80px; }
 .empty-text { color: #888; margin-bottom: 20px; }
 
@@ -179,6 +180,8 @@ button { font: inherit; cursor: pointer; }
     outline: none;
 }
 .search-input:focus { border-color: #f4a261; box-shadow: 0 0 0 3px rgba(244, 162, 97, 0.15); }
+.toolbar-title + .search-input { margin-top: 12px; }
+.search-input + .card-scroll, .shared-toolbar + .card-scroll, .join-error + .card-scroll, .folder-bar + .card-scroll, .search-input + .spinner, .search-input + .load-error, .shared-toolbar + .spinner, .shared-toolbar + .load-error { margin-top: 16px; }
 .toolbar-row { display: flex; justify-content: space-between; align-items: center; margin: 24px 0; }
 .toolbar-title { font-size: 18px; font-weight: 700; color: #1a1a1a; margin: 28px 0 0; }
 .category-list { display: flex; gap: 40px; }
@@ -188,6 +191,16 @@ button { font: inherit; cursor: pointer; }
 .category-bar { display: flex; gap: 40px; background: #d9d9d9; padding: 8px 24px; margin: 30px 0; }
 .category-bar .category-item { font-style: normal; }
 
+/* each list shows about two rows of cards, then scrolls; the padding keeps the hover shadow from being cut off */
+.card-scroll { max-height: 580px; overflow-y: auto; overflow-x: hidden; padding: 4px 6px; margin: -4px -6px; }
+/* search bar on the left, the join controls on the right, all the same height and font size */
+.shared-toolbar { display: flex; align-items: center; gap: 12px 24px; margin-top: 12px; flex-wrap: wrap; }
+.shared-toolbar > .search-input { flex: 1 1 240px; width: auto; min-width: 0; }
+.join-box { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.join-title { font-size: 15px; font-weight: 600; color: #555; white-space: nowrap; }
+.join-box .join-input { width: 220px; height: 36px; margin: 0; }
+.join-box .small-button { height: 36px; padding: 0 16px; font-size: 15px; }
+.join-error { margin-top: 8px; }
 .card-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 24px; }
 .card-item {
     position: relative;         /* the delete button and the spinner sit in its corners */
@@ -208,9 +221,9 @@ button { font: inherit; cursor: pointer; }
 /* Thumbnail area: shows the canvas preview, or a neutral placeholder when none is stored yet */
 .card-preview {
     width: 100%;
-    min-height: 120px;
+    aspect-ratio: 3 / 2;        /* same shape as the canvas, so a card does not change size when its preview arrives */
+    flex: none;
     background: #efefef;
-    flex-grow: 1;
     overflow: hidden;
 }
 .card-thumbnail { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -929,6 +942,7 @@ button { font: inherit; cursor: pointer; }
     :root:not([data-theme="light"]) .login-button { background: #252525; border-color: #3a3a3a; color: #e8e8e8; }
     :root:not([data-theme="light"]) .login-button:hover { background: #2e2e2e; border-color: #555; }
     :root:not([data-theme="light"]) .toolbar-title { color: #e8e8e8; }
+    :root:not([data-theme="light"]) .join-title { color: #bbb; }
     :root:not([data-theme="light"]) .category-bar { background: #2a2a2a; }
     :root:not([data-theme="light"]) .card-item { background: #252525; box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05); }
     :root:not([data-theme="light"]) .card-item:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05); }
@@ -1002,6 +1016,7 @@ button { font: inherit; cursor: pointer; }
 :root[data-theme="dark"] .login-button { background: #252525; border-color: #3a3a3a; color: #e8e8e8; }
 :root[data-theme="dark"] .login-button:hover { background: #2e2e2e; border-color: #555; }
 :root[data-theme="dark"] .toolbar-title { color: #e8e8e8; }
+:root[data-theme="dark"] .join-title { color: #bbb; }
 :root[data-theme="dark"] .category-bar { background: #2a2a2a; }
 :root[data-theme="dark"] .card-item { background: #252525; box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05); }
 :root[data-theme="dark"] .card-item:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05); }

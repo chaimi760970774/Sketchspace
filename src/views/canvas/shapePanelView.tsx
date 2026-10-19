@@ -18,7 +18,6 @@ export function ShapePanelView(props: ShapePanelViewProps){
 
     return (
         <>
-            <div className="panel-box">Collage instruction</div>
             <div className="shape-grid">
                 {shapes.map(shapeCB)}
             </div>

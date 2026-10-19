@@ -20,8 +20,6 @@ export function StrokePanelView(props: StrokePanelViewProps){
 
     return (
         <>
-            <div className="panel-box">Collage instruction</div>
-
             <div className="panel-label">Stroke textual</div>
             <div className="stroke-type-list">
                 {strokeTypes.map(strokeTypeCB)}

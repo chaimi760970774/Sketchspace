@@ -16,6 +16,7 @@ interface LoginViewProps {
     onLogin: () => void;
     onGuestLogin: () => void;
     onToggleSignUp: () => void;
+    onForgotPassword: () => void;
 }
 
 export function LoginView(props: LoginViewProps){
@@ -39,6 +40,10 @@ export function LoginView(props: LoginViewProps){
 
                 <label>Password</label>
                 <input className="login-input" type="password" autoComplete={props.signingUp ? "new-password" : "current-password"} value={props.password} onChange={passwordChangeACB}/>
+
+                {!props.signingUp && <div className="login-forgot">
+                    <span className="link" onClick={props.onForgotPassword}>Forgot your password?</span>
+                </div>}
 
                 {props.error && <div className="field-error login-error" role="alert">{props.error}</div>}
 

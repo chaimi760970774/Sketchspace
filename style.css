@@ -97,7 +97,7 @@ button { font: inherit; cursor: pointer; }
     max-width: 640px;
     font-size: 15px;
 }
-.login-google, .login-buttons { grid-column: 2; }
+.login-google, .login-buttons, .login-forgot, .login-note { grid-column: 2; }
 .login-input {
     height: 60px;
     border: 1.5px solid #ccc;
@@ -123,6 +123,8 @@ button { font: inherit; cursor: pointer; }
 .login-buttons .login-button { flex: 1; }
 .google-g { color: #4285f4; font-weight: bold; margin-right: 8px; }
 .link { text-decoration: underline; cursor: pointer; }
+.login-forgot { margin-top: -12px; font-size: 14px; }
+.login-note { font-size: 14px; color: #555; margin: 0; }
 
 
 /* ========== Gallery / My Work ========== */

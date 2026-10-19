@@ -1,4 +1,5 @@
 import "/style.css"
+import { LogoMark } from "/src/views/logoView.tsx";
 import type { ChangeEvent, FormEvent, RefObject } from "react";
 
 interface LoginViewProps {
@@ -22,7 +23,7 @@ interface LoginViewProps {
 export function LoginView(props: LoginViewProps){
     return (
         <div className="login-page">
-            <div className="login-logo">Logo</div>
+            <div className="login-logo" role="img" aria-label="Sketchspace"><LogoMark className="login-logo-mark"/></div>
             <h2 className="login-title">Welcome to Sketchspace</h2>
 
             {/* a real form, so the browser knows the password field belongs to it and Enter logs in */}

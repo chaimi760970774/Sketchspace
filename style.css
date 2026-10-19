@@ -79,15 +79,15 @@ button { font: inherit; cursor: pointer; }
     gap: 24px;
 }
 .login-logo {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    background: #d9d9d9;
+    width: 80px;
+    height: 80px;
+    border-radius: 22px;
+    background: #242424;        /* same dark as the sidebar, so the white triangle shows */
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
 }
+.login-logo-mark { width: 52px; height: 52px; }
 .login-title { margin: 0; }
 .login-form {
     display: grid;
@@ -937,8 +937,7 @@ button { font: inherit; cursor: pointer; }
     :root:not([data-theme="light"]) .empty-text { color: #777; }
     :root:not([data-theme="light"]) .sidebar { background: #111; }
     :root:not([data-theme="light"]) .login-page { background: #1a1a1a; }
-    :root:not([data-theme="light"]) .login-logo { background: #2e2e2e; }
-    :root:not([data-theme="light"]) .login-input { background: #252525; border-color: #3a3a3a; color: #e8e8e8; }
+        :root:not([data-theme="light"]) .login-input { background: #252525; border-color: #3a3a3a; color: #e8e8e8; }
     :root:not([data-theme="light"]) .login-button { background: #252525; border-color: #3a3a3a; color: #e8e8e8; }
     :root:not([data-theme="light"]) .login-button:hover { background: #2e2e2e; border-color: #555; }
     :root:not([data-theme="light"]) .toolbar-title { color: #e8e8e8; }
@@ -1011,7 +1010,6 @@ button { font: inherit; cursor: pointer; }
 :root[data-theme="dark"] .empty-text { color: #777; }
 :root[data-theme="dark"] .sidebar { background: #111; }
 :root[data-theme="dark"] .login-page { background: #1a1a1a; }
-:root[data-theme="dark"] .login-logo { background: #2e2e2e; }
 :root[data-theme="dark"] .login-input { background: #252525; border-color: #3a3a3a; color: #e8e8e8; }
 :root[data-theme="dark"] .login-button { background: #252525; border-color: #3a3a3a; color: #e8e8e8; }
 :root[data-theme="dark"] .login-button:hover { background: #2e2e2e; border-color: #555; }

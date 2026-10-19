@@ -1,4 +1,5 @@
 import "/style.css"
+import { LogoMark } from "/src/views/logoView.tsx";
 import type { ChangeEvent, FormEvent } from "react";
 
 interface ResetPasswordViewProps {
@@ -19,7 +20,7 @@ interface ResetPasswordViewProps {
 export function ResetPasswordView(props: ResetPasswordViewProps){
     return (
         <div className="login-page">
-            <div className="login-logo">Logo</div>
+            <div className="login-logo" role="img" aria-label="Sketchspace"><LogoMark className="login-logo-mark"/></div>
             {props.hasToken ? chooseView() : props.emailSent ? sentView() : askView()}
         </div>
     );

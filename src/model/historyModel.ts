@@ -21,6 +21,13 @@ const initialState: HistoryState = {
     isApplyingHistory: false,
 };
 
+function renameElementIdInOp(op: HistoryOp, oldId: string, newId: string): HistoryOp {
+    if (op.type === "updateElement"  && op.elementId        === oldId) return { ...op, elementId: newId };
+    if (op.type === "removeElement"  && op.elementId        === oldId) return { ...op, elementId: newId };
+    if (op.type === "restoreElement" && op.element.id       === oldId) return { ...op, element: { ...op.element, id: newId } };
+    return op;
+}
+
 // the values the element had before the given changes (mirrors the helper in canvasModel.ts)
 function previousValues(element: CanvasElement, changes: ElementChanges): ElementChanges {
     return {
@@ -62,6 +69,13 @@ export const historyModel = {
         this.redoStack = [...this.redoStack, op];
     },
 
+    renameElementInRedoStack(oldId: string, newId: string): void {
+        this.redoStack = this.redoStack.map(op => renameElementIdInOp(op, oldId, newId));
+    },
+    renameElementInUndoStack(oldId: string, newId: string): void {
+        this.undoStack = this.undoStack.map(op => renameElementIdInOp(op, oldId, newId));
+    },
+
     clearHistory(): void {
         this.undoStack = [];
         this.redoStack = [];
@@ -98,9 +112,11 @@ export const historyModel = {
             }
         } else if (op.type === "restoreElement") {
             const model = this;
+            const oldId = op.element.id;
             this.isApplyingHistory = false;
             this.restoreElement(op.element, function onSavedACB(newId: string) {
                 model.appendRedoOp({ type: "removeElement", elementId: newId });
+                model.renameElementInUndoStack(oldId, newId);
             });
             return;
         } else if (op.type === "updateElement") {
@@ -143,9 +159,11 @@ export const historyModel = {
             }
         } else if (op.type === "restoreElement") {
             const model = this;
+            const oldId = op.element.id;
             this.isApplyingHistory = false;
             this.restoreElement(op.element, function onSavedACB(newId: string) {
                 model.appendUndoOp({ type: "removeElement", elementId: newId });
+                model.renameElementInRedoStack(oldId, newId);
             });
             return;
         } else if (op.type === "updateElement") {

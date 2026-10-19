@@ -22,6 +22,14 @@ const PHOTO_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;     // of the file chosen; what is sent is resized and far smaller
 const PHOTO_SIZE = 256;                        // pixels: every profile photo is made PHOTO_SIZE x PHOTO_SIZE
 
+const THEME_KEY = "sketchspace_theme";
+
+function getInitialTheme(): 'light' | 'dark' {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === 'light' || stored === 'dark') return stored;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 // An uploaded picture is a path on the server ("/uploads/avatars/..."), so it needs the server's address to load
 // from the page. A Google picture is already a full https link.
 function toPhotoURL(avatarUrl: string | null | undefined): string | null {
@@ -88,9 +96,16 @@ export const userModel = {
 
     ...initialState,
 
+    themePreference: getInitialTheme() as 'light' | 'dark',
 
 
     // ========== Methods ==========
+
+    // Theme
+    setTheme(pref: 'light' | 'dark'): void {
+        this.themePreference = pref;
+        localStorage.setItem(THEME_KEY, pref);
+    },
 
     // Session
     // called once when the app starts: a login from an earlier visit may still be valid

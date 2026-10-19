@@ -63,6 +63,13 @@ export function CanvasView(props: CanvasViewProps){
     useEffect(listenToUndoRedoKeysACB, [props.onUndo, props.onRedo]);
     useEffect(listenToEscapeKeyACB, [props.onDeselect]);
 
+    // Capture a thumbnail shortly after mount so the gallery has a preview even before the
+    // user first navigates away.  The short delay lets Konva finish its initial render.
+    useEffect(captureThumbnailOnMountACB, []);
+
+    // Re-capture after every successful save so the preview stays current after edits.
+    useEffect(captureThumbnailOnSavedACB, [props.saveStatus, props.onCaptureThumbnail]);
+
     return (
         <div className="layout">
             {/* main nav sidebar — unchanged on canvas page */}
@@ -228,6 +235,18 @@ export function CanvasView(props: CanvasViewProps){
         if (props.saveStatus === "saved")
             return <span className="save-status">All changes saved</span>;
         return null;
+    }
+
+    function captureThumbnailOnMountACB(){
+        const timer = setTimeout(function captureCB(){
+            props.onCaptureThumbnail(captureStageThumb(stageRef.current));
+        }, 200);
+        return function cleanupCB(){ clearTimeout(timer); };
+    }
+
+    function captureThumbnailOnSavedACB(){
+        if (props.saveStatus !== "saved") return;
+        props.onCaptureThumbnail(captureStageThumb(stageRef.current));
     }
 
     function creditCB(credit: PhotoCredit, index: number){

@@ -13,11 +13,14 @@ const Gallery = observer(// observer needed for the presenter to update (its vie
         useEffect(loadMyWorkACB, []);
 
         return <GalleryView canvases={props.model.getMyCanvases()}
+                            sharedCanvases={props.model.getGalleryCanvases()}
+                            sharedSearchText={props.model.gallerySearchText}
                             folders={props.model.getMyFolders()}
                             searchText={props.model.myWorkSearchText}
                             loading={props.model.isLoadingCanvases()}
                             error={props.model.getCanvasesError()}
                             creating={props.model.creatingCanvas}
+                            getThumbnail={getThumbnailCB}
                             busyCanvasIds={props.model.busyCanvasIds}
                             selectedFolderId={props.model.selectedFolderId}
                             dragOverTab={props.model.dragOverTab}
@@ -33,6 +36,7 @@ const Gallery = observer(// observer needed for the presenter to update (its vie
                             joinError={props.model.joinCanvasIdError}
 
                             onSearchChange={handlerSearchChangeACB}
+                            onSharedSearchChange={handlerSharedSearchChangeACB}
                             onRetry={handlerRetryACB}
                             onFoldersRetry={handlerFoldersRetryACB}
                             onFolderClick={handlerFolderClickACB}
@@ -50,9 +54,11 @@ const Gallery = observer(// observer needed for the presenter to update (its vie
                             onNewCanvas={handlerNewCanvasACB}
                             onCardClick={handlerCardClickACB}/>;
 
+        function getThumbnailCB(canvasId: string){ return props.model.getCardThumbnail(canvasId); }
         function loadMyWorkACB(){ props.model.loadMyWork(); }
 
         function handlerSearchChangeACB(text: string){ props.model.setMyWorkSearchText(text); }
+        function handlerSharedSearchChangeACB(text: string){ props.model.setGallerySearchText(text); }
         function handlerRetryACB(){ props.model.loadCanvases(); }
         function handlerFoldersRetryACB(){ props.model.loadFolders(); }
         function handlerFolderClickACB(folderId: string | null){ props.model.selectFolder(folderId); }

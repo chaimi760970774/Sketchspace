@@ -1,17 +1,19 @@
 import "/style.css"
 import { formatDate } from "/src/utils/formatDate.ts";
-import { getThumbnail } from "/src/utils/thumbnailStore.ts";
 import type { ChangeEvent, DragEvent, KeyboardEvent, MouseEvent } from "react";
 import type { Canvas, Folder } from "/src/model/types.ts";
 
 interface GalleryViewProps {
     canvases: Canvas[];
+    sharedCanvases: Canvas[];
+    sharedSearchText: string;
     folders: Folder[];
     searchText: string;
     loading: boolean;
     error: string;
     creating: boolean;
     busyCanvasIds: string[];
+    getThumbnail: (canvasId: string) => string | null;
     selectedFolderId: string | null;
     dragOverTab: string | null;
     newFolderOpen: boolean;
@@ -25,6 +27,7 @@ interface GalleryViewProps {
     joinText: string;
     joinError: string;
     onSearchChange: (text: string) => void;
+    onSharedSearchChange: (text: string) => void;
     onRetry: () => void;
     onFoldersRetry: () => void;
     onFolderClick: (folderId: string | null) => void;
@@ -54,18 +57,23 @@ export function GalleryView(props: GalleryViewProps){
             </div>
 
             <div className="page-content">
-                <input className="search-input" placeholder="Search canvases" aria-label="Search canvases"
-                       value={props.searchText} onChange={searchChangeACB}/>
-
-                <div className="toolbar-title">Draw together with others</div>
-                <div className="join-row">
-                    <input className="search-input" placeholder="Insert canvas ID" aria-label="Canvas id to join"
-                           value={props.joinText} onChange={joinTextChangeACB} onKeyDown={joinKeyDownACB}/>
-                    <button className="small-button" onClick={joinClickACB}>Join canvas</button>
-                    {props.joinError && <span className="join-error" role="alert">{props.joinError}</span>}
+                <div className="toolbar-title">Shared Canvas</div>
+                <div className="shared-toolbar">
+                    <input className="search-input" placeholder="Search shared canvases" aria-label="Search shared canvases"
+                           value={props.sharedSearchText} onChange={sharedSearchChangeACB}/>
+                    <div className="join-box">
+                        <span className="join-title">Draw together with others</span>
+                        <input className="search-input join-input" placeholder="Insert canvas ID" aria-label="Canvas id to join"
+                               value={props.joinText} onChange={joinTextChangeACB} onKeyDown={joinKeyDownACB}/>
+                        <button className="small-button" onClick={joinClickACB}>Join canvas</button>
+                    </div>
                 </div>
+                {props.joinError && <div className="join-error" role="alert">{props.joinError}</div>}
+                {renderShared()}
 
-                <div className="toolbar-title">My canvases</div>
+                <div className="toolbar-title">My Canvas</div>
+                <input className="search-input" placeholder="Search my canvases" aria-label="Search my canvases"
+                       value={props.searchText} onChange={searchChangeACB}/>
                 <div className="folder-bar">
                     {renderFolderBar()}
                 </div>
@@ -76,6 +84,7 @@ export function GalleryView(props: GalleryViewProps){
     );
 
     function searchChangeACB(evt: ChangeEvent<HTMLInputElement>){ props.onSearchChange(evt.target.value); }
+    function sharedSearchChangeACB(evt: ChangeEvent<HTMLInputElement>){ props.onSharedSearchChange(evt.target.value); }
     function joinTextChangeACB(evt: ChangeEvent<HTMLInputElement>){ props.onJoinTextChange(evt.target.value); }
     function joinKeyDownACB(evt: KeyboardEvent<HTMLInputElement>){ if (evt.key === "Enter") props.onJoin(); }
     function joinClickACB(){ props.onJoin(); }
@@ -92,17 +101,39 @@ export function GalleryView(props: GalleryViewProps){
 
         return (
             <>
-                <div className="card-list">
+                <div className="card-scroll"><div className="card-list">
                     <button className="card-new" aria-label="New canvas"
                             disabled={props.creating} onClick={props.onNewCanvas}>
                         {props.creating
                             ? <div className="spinner spinner-small" role="status" aria-label="Creating canvas"></div>
                             : <span className="card-new-icon">+</span>}
                     </button>
-                    {props.canvases.map(cardCB)}
-                </div>
+                    {props.canvases.map(myCardCB)}
+                </div></div>
                 {props.canvases.length === 0 &&
                     <div className="empty-text">{emptyText()}</div>}
+            </>
+        );
+    }
+
+    // same card as My Canvas, but without delete / drag since the canvas may not be the user's
+    function sharedCardCB(canvas: Canvas){ return cardCB(canvas, true); }
+
+    // shared canvases are everyone's, so no delete / drag; shown for guests too
+    function renderShared(){
+        if (props.loading) return <div className="spinner" role="status" aria-label="Loading shared canvases"></div>;
+        if (props.error)
+            return (
+                <div className="load-error" role="alert">
+                    <span>Could not load canvases: {props.error}</span>
+                    <button className="small-button" onClick={props.onRetry}>Retry</button>
+                </div>
+            );
+        return (
+            <>
+                <div className="card-scroll"><div className="card-list">{props.sharedCanvases.map(sharedCardCB)}</div></div>
+                {props.sharedCanvases.length === 0 &&
+                    <div className="empty-text">{props.sharedSearchText ? "No canvas found" : "No shared canvases yet"}</div>}
             </>
         );
     }
@@ -212,9 +243,11 @@ export function GalleryView(props: GalleryViewProps){
         );
     }
 
-    function cardCB(canvas: Canvas){
-        const busy = props.busyCanvasIds.includes(canvas._id);
-        const thumb = getThumbnail(canvas._id);
+    function myCardCB(canvas: Canvas){ return cardCB(canvas, false); }
+
+    function cardCB(canvas: Canvas, readOnly: boolean){
+        const busy = !readOnly && props.busyCanvasIds.includes(canvas._id);
+        const thumb = props.getThumbnail(canvas._id);
 
         function clickCardACB(){ props.onCardClick(canvas); }
         function dragStartACB(evt: DragEvent<HTMLDivElement>){
@@ -230,10 +263,11 @@ export function GalleryView(props: GalleryViewProps){
         }
 
         return (
-            <div key={canvas._id} className="card-item" draggable={!busy} aria-busy={busy}
+            <div key={(readOnly ? "shared-" : "") + canvas._id} className="card-item" draggable={!readOnly && !busy} aria-busy={busy}
                  onClick={clickCardACB} onDragStart={dragStartACB} onDragEnd={dragEndACB}>
-                <button className="card-delete" aria-label={"Delete " + canvas.name} title="Delete canvas"
-                        disabled={busy} onClick={deleteACB}>×</button>
+                {!readOnly &&
+                    <button className="card-delete" aria-label={"Delete " + canvas.name} title="Delete canvas"
+                            disabled={busy} onClick={deleteACB}>×</button>}
 
                 <div className="card-preview">
                     {thumb && <img className="card-thumbnail" src={thumb} alt="" aria-hidden="true"/>}

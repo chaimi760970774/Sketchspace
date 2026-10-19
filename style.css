@@ -1077,3 +1077,60 @@ button { font: inherit; cursor: pointer; }
 :root[data-theme="dark"] .toggle-slider { background: #444; }
 :root[data-theme="dark"] .spinner { border-color: #333; border-top-color: #f4a261; }
 :root[data-theme="dark"] .coming-soon { color: #666; }
+
+
+/* ========== Phone ========== */
+@media (max-width: 700px) {
+    /* the sidebar becomes a bar along the top */
+    .layout { flex-direction: column; }
+    .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        align-items: center;
+        padding: 6px 8px;
+        z-index: 10;
+    }
+    .sidebar .logo { flex-direction: row; margin: 0 auto 0 0; padding: 0; }
+    .logo-mark { width: 28px; height: 28px; }
+    .sidebar-item { border-left: none; border-bottom: 3px solid transparent; padding: 10px 14px; }
+    .sidebar-item.active, .sidebar-item.tool-active { border-left-color: transparent; border-bottom-color: #f4a261; }
+    .sidebar-bottom { margin-top: 0; }
+
+    .hero { height: 220px; gap: 20px; padding: 0 16px; text-align: center; }
+    .hero-title { font-size: 32px; }
+    .page-content { padding: 24px 16px; }
+
+    /* search bar on top, join controls below it, each on the full width */
+    .shared-toolbar > .search-input { flex-basis: 100%; }
+    .join-box { width: 100%; }
+    .join-title { width: 100%; }
+    .join-box .join-input { flex: 1; width: auto; min-width: 0; }
+
+    .card-list { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+    .card-scroll { max-height: 60vh; }
+    .card-new { height: auto; min-height: 150px; }
+    /* bigger delete button, easier to tap */
+    .card-delete { width: 32px; height: 32px; }
+
+    .folder-bar { flex-wrap: wrap; }
+    .load-error { flex-wrap: wrap; }
+
+    /* canvas page: the screen itself does not scroll, so the top bar and the tool column stay in place
+       and the drawing board fills what is left */
+    .layout:has(.canvas-wrapper) { height: 100vh; height: 100dvh; overflow: hidden; }
+    .layout:has(.canvas-wrapper) .sidebar { flex-shrink: 0; }
+    .canvas-wrapper { min-height: 0; overflow: hidden; }
+    .canvas-toolbar { height: 100%; position: static; overflow-y: auto; }
+    .tool-panel { width: min(290px, calc(100vw - 52px)); padding: 16px; }
+    .canvas-main { min-width: 0; min-height: 0; padding: 8px 12px; gap: 8px; }
+    .canvas-topbar { flex-wrap: wrap; gap: 6px 12px; }
+    .topbar-right { margin-left: 0; gap: 10px; flex-wrap: wrap; }
+    .live-label { display: none; }
+    .canvas-area { min-height: 0; border-radius: 16px; padding: 8px; }
+    .canvas-credit { font-size: 11px; }
+    .profile-card { margin: 24px 16px; border-radius: 24px; padding-bottom: 48px; }
+    .profile-header { flex-direction: column; padding: 28px 20px; gap: 16px; text-align: center; }
+    .profile-avatar { width: 100px; height: 100px; }
+    .profile-row { flex-wrap: wrap; gap: 12px; padding: 20px; }
+}

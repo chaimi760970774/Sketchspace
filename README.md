@@ -140,6 +140,23 @@ Open the link shown in the terminal (usually http://localhost:8080). After chang
 
 Other scripts: `npm run typecheck` (TypeScript, strict) and `npm run build`.
 
+## End-to-end tests
+
+Run the suite with `npm run test:e2e`. Playwright builds the E2E bundle and serves
+it with Vite preview at `http://127.0.0.1:4173`, proxying API/socket traffic to
+the local backend at `http://localhost:3000`. Failure screenshots, videos, and
+traces are retained.
+Use `npx playwright show-report` to inspect the HTML report or
+`npx playwright show-trace test-results/<test>/trace.zip` to inspect a trace or `npx playwright test --ui` to open the visual interface.
+
+Account journey tests generate unique credentials, sign up and log in, update
+the profile where relevant, and delete the created account in `finally` cleanup.
+These tests require a local backend and a test database that permits creating
+and deleting users. Do not point disposable-account tests at production data.
+Collaboration creates a temporary guest-owned board and verifies synchronization
+across two browser contexts. Sketchspace has no checkout or payment flow, so
+there is no checkout journey to automate.
+
 ## Connecting to the server
 
 The server address is `VITE_API_URL`, set in two committed files (only a public address belongs there, never a secret):

@@ -12,8 +12,8 @@
         "checkJs": false,
         "isolatedModules": true,
         "allowImportingTsExtensions": true,
-        "types": ["vite/client"],
+        "types": ["vite/client", "node"],
         "paths": { "/src/*": ["./src/*"] }
     },
-    "include": ["src"]
+    "include": ["src", "e2e", "playwright.config.ts"]
 }

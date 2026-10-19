@@ -3,11 +3,14 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
+        "build:e2e": "vite build --mode e2e",
         "serve": "vite preview",
+        "test:e2e": "playwright test",
         "typecheck": "tsc --noEmit"
     },
     "devDependencies": {
         "@playwright/test": "^1.64.1",
+        "@types/node": "^26.6.5",
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
         "@vitejs/plugin-react": "latest",

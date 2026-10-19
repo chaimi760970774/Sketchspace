@@ -27,13 +27,18 @@ const Login = observer(// observer needed for the presenter to update (its view)
                           onNameChange={handlerNameChangeACB}
                           onLogin={handlerLoginACB}
                           onGuestLogin={handlerGuestLoginACB}
-                          onToggleSignUp={handlerToggleSignUpACB}/>;
+                          onToggleSignUp={handlerToggleSignUpACB}
+                          onForgotPassword={handlerForgotPasswordACB}/>;
 
         function handlerEmailChangeACB(email: string){ props.model.setLoginEmail(email); }
         function handlerPasswordChangeACB(password: string){ props.model.setLoginPassword(password); }
 
         function handlerNameChangeACB(name: string){ props.model.setLoginName(name); }
         function handlerToggleSignUpACB(){ props.model.toggleSignUp(); }
+        function handlerForgotPasswordACB(){
+            props.model.startPasswordReset();
+            navigate("/reset-password");
+        }
 
         // logging in (or signing up) goes to the gallery once the server accepted it
         function handlerLoginACB(){ props.model.submitLogin().then(goToGalleryACB); }

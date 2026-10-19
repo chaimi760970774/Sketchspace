@@ -1,5 +1,5 @@
 import { API_URL, setTokenOwner, getOwnedCanvasIds, claimCanvas } from "/src/api/canvasSource.ts";
-import { register as registerRequest, login as loginRequest, loginWithGoogle as googleRequest, logout as logoutRequest, getSession, updateMe, uploadAvatar, deleteAvatar, deleteMe } from "/src/api/authSource.ts";
+import { register as registerRequest, login as loginRequest, loginWithGoogle as googleRequest, logout as logoutRequest, getSession, updateMe, requestPasswordReset as sendResetLinkRequest, resetPassword as resetPasswordRequest, uploadAvatar, deleteAvatar, deleteMe } from "/src/api/authSource.ts";
 import { isGoogleConfigured, renderGoogleButton } from "/src/api/googleauthSource.ts";
 import { resolvePromise } from "/src/utils/resolvePromise.ts";
 import { resizeToSquare } from "/src/utils/resizeImage.ts";
@@ -10,6 +10,9 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // same rule as the server: 2-30 characters, letters, digits, spaces and _ . -
 const DISPLAY_NAME_PATTERN = /^[\p{L}\p{N} _.-]{2,30}$/u;
+
+// same rule as the server: 8-128 characters with at least one letter and one digit
+const PASSWORD_PATTERN = /^(?=.*\p{L})(?=.*\d).{8,128}$/u;
 
 // someone who is not logged in: canvases are owned through this browser's owner tokens
 const GUEST: User = { id: "guest", name: "Guest", email: "", photoURL: null, hasCustomPhoto: false };
@@ -45,6 +48,13 @@ interface UserState {
     loggingIn: boolean;         // true while the request runs
     googleEnabled: boolean;     // false without a Google client id: the login page then has no Google button
 
+    // Forgotten password: first an e-mail with a link is asked for, then the link opens the page to choose a new one
+    resetEmail: string;
+    resetNewPassword: string;
+    resetError: string;         // why the last step failed, "" if it did not
+    resetBusy: boolean;         // true while the request runs
+    resetEmailSent: boolean;    // true once the server accepted the address
+
     // Profile
     editingField: ProfileField | null;      // field being edited, null = none
     profileDraft: string;                   // input value while editing
@@ -61,6 +71,11 @@ const initialState: UserState = {
     loginError: "",
     loggingIn: false,
     googleEnabled: isGoogleConfigured,
+    resetEmail: "",
+    resetNewPassword: "",
+    resetError: "",
+    resetBusy: false,
+    resetEmailSent: false,
     editingField: null,
     profileDraft: "",
     savingPhoto: false,
@@ -162,6 +177,61 @@ export const userModel = {
     failLogin(message: string): Promise<boolean> {
         this.loginError = message;
         return Promise.resolve(false);
+    },
+
+    // Forgotten password
+    // the page starts empty, except that the e-mail typed on the login page is already filled in
+    startPasswordReset(): void {
+        this.resetEmail = this.loginEmail;
+        this.resetNewPassword = "";
+        this.resetError = "";
+        this.resetEmailSent = false;
+    },
+    setResetEmail(email: string): void { this.resetEmail = email; this.resetError = ""; },
+    setResetNewPassword(password: string): void { this.resetNewPassword = password; this.resetError = ""; },
+
+    // asks for the e-mail with the link; resetEmailSent tells when the server accepted the address
+    sendResetLink(): Promise<void> {
+        if (this.resetBusy) return Promise.resolve();
+        const model = this;
+        const email = this.resetEmail.trim();
+        if (!EMAIL_PATTERN.test(email)) {
+            this.resetError = "Please enter a valid email, e.g. name@example.com";
+            return Promise.resolve();
+        }
+
+        this.resetBusy = true;
+        this.resetError = "";
+        return sendResetLinkRequest(email).then(sentACB).catch(failedACB).finally(doneACB);
+
+        function sentACB(): void { model.resetEmailSent = true; }
+        function failedACB(error: Error): void { model.resetError = error.message; }
+        function doneACB(): void { model.resetBusy = false; }
+    },
+
+    // token: from the link in the e-mail. Resolves to true when the password was changed (the user then logs in)
+    chooseNewPassword(token: string): Promise<boolean> {
+        if (this.resetBusy) return Promise.resolve(false);
+        const model = this;
+        if (!PASSWORD_PATTERN.test(this.resetNewPassword)) {
+            this.resetError = "Password must be 8-128 characters and contain a letter and a digit";
+            return Promise.resolve(false);
+        }
+
+        this.resetBusy = true;
+        this.resetError = "";
+        return resetPasswordRequest(token, this.resetNewPassword).then(changedACB).catch(failedACB).finally(doneACB);
+
+        function changedACB(): boolean {
+            model.resetNewPassword = "";       // not kept once it is no longer needed
+            model.showToast("Password changed, you can log in now", "success");
+            return true;
+        }
+        function failedACB(error: Error): boolean {
+            model.resetError = error.message;
+            return false;
+        }
+        function doneACB(): void { model.resetBusy = false; }
     },
 
     // "Log as guest": no account, canvases are owned through this browser (a login that is still open ends)

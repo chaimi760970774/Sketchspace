@@ -2,6 +2,7 @@ import { Gallery } from "./galleryPresenter.tsx";
 import { Profile } from "./profilePresenter.tsx";
 import { Canvas } from "./canvasPresenter.tsx";
 import { Login } from "./loginPresenter.tsx";
+import { ResetPassword } from "./resetPasswordPresenter.tsx";
 import { Sidebar } from "./sidebarPresenter.tsx";
 import { Toast } from "./toastPresenter.tsx";
 
@@ -65,6 +66,11 @@ export function makeRouter(model: Model): Router {
         {
             path: "/login",
             element: <Login model={model} />,
+        },
+        {
+            // the link in the password reset e-mail opens this with ?token=...
+            path: "/reset-password",
+            element: <ResetPassword model={model} />,
         },
         {
             path: "/canvas",

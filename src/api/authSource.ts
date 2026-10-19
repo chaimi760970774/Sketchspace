@@ -46,6 +46,17 @@ export function loginWithGoogle(idToken: string): Promise<ServerUser> {
     return request<UserResponse>("/api/auth/google", withJson("POST", { idToken: idToken })).then(getUserACB);
 }
 
+// asks the server to e-mail a link for choosing a new password. It resolves for any valid address, whether or not
+// an account has it: the server does not tell, so the form cannot be used to find out who has an account
+export function requestPasswordReset(email: string): Promise<unknown> {
+    return request<unknown>("/api/auth/forgot-password", withJson("POST", { email: email }));
+}
+
+// token: the one in the link from that e-mail. The link works once; the user logs in with the new password afterwards
+export function resetPassword(token: string, password: string): Promise<unknown> {
+    return request<unknown>("/api/auth/reset-password", withJson("POST", { token: token, password: password }));
+}
+
 // the token only lives in this browser, so forgetting it is the whole logout
 export function logout(): Promise<unknown> {
     setLoginToken(null);

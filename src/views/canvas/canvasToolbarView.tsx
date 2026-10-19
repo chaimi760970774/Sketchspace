@@ -1,6 +1,6 @@
 import "/style.css";
 import { useRef } from "react";
-import { Stamp, Paintbrush, Eraser, Pipette, Image, Upload, Undo2, Redo2 } from "lucide-react";
+import { MousePointer2, Stamp, Paintbrush, Eraser, Pipette, Image, Upload, Undo2, Redo2 } from "lucide-react";
 import type { Tool } from "/src/model/types.ts";
 
 interface CanvasToolbarViewProps {
@@ -9,6 +9,7 @@ interface CanvasToolbarViewProps {
     eyedropperOn: boolean;
     canUndo: boolean;
     canRedo: boolean;
+    onCursorClick: () => void;
     onToolClick: (tool: Tool) => void;
     onEraserClick: () => void;
     onEyedropperClick: () => void;
@@ -22,6 +23,10 @@ export function CanvasToolbarView(props: CanvasToolbarViewProps) {
 
     return (
         <div className="canvas-toolbar" onMouseDown={e => e.stopPropagation()}>
+            <button className={"canvas-tool-btn" + (isCursorActive() ? " active" : "")}
+                    title="Select / Cursor" onClick={props.onCursorClick}>
+                <MousePointer2 size={22} />
+            </button>
             <button className={btnClass("shape")} title="Shapes" onClick={() => props.onToolClick("shape")}>
                 <Stamp size={22} />
             </button>
@@ -60,6 +65,10 @@ export function CanvasToolbarView(props: CanvasToolbarViewProps) {
         const file = e.target.files?.[0];
         if (file) props.onUploadLocalFile(file);
         e.target.value = "";
+    }
+
+    function isCursorActive(): boolean {
+        return props.currentTool === null && !props.eraserOn && !props.eyedropperOn;
     }
 
     function btnClass(tool: Tool): string {

@@ -164,6 +164,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
                     eyedropperOn={props.model.eyedropperOn}
                     canUndo={props.model.canUndo()}
                     canRedo={props.model.canRedo()}
+                    onCursorClick={handlerCursorClickACB}
                     onToolClick={handlerToolClickACB}
                     onEraserClick={handlerEraserToggleACB}
                     onEyedropperClick={handlerEyedropperToggleACB}
@@ -214,6 +215,7 @@ const Canvas = observer(// observer needed for the presenter to update (its view
         function handlerHomeACB(){ navigate("/"); }
         function handlerGalleryClickACB(){ navigate("/gallery"); }
 
+        function handlerCursorClickACB(){ props.model.resetToDefaultCursor(); }
         function handlerToolClickACB(tool: Tool){ props.model.setCurrentTool(tool); }
 
         // topbar

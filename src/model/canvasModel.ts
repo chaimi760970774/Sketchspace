@@ -131,6 +131,12 @@ export const canvasModel = {
         }
     },
     turnEyedropperOff(): void { this.eyedropperOn = false; },
+    resetToDefaultCursor(): void {
+        this.currentTool = null;
+        this.toolPanelOpen = false;
+        this.eraserOn = false;
+        this.eyedropperOn = false;
+    },
 
     // Erasing: deletes whole lines, photos, shapes and cutouts under the pointer, where a click would hit them.
     // One drag deletes one kind only: lines if it first touches a line, otherwise elements,

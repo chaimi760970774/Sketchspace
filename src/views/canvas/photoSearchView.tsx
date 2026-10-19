@@ -19,8 +19,11 @@ interface PhotoSearchViewProps {
     onOrientationChange: (orientation: string) => void;
     onColorChange: (color: string) => void;
     onSearch: () => void;
-    onPhotoSelect: (photo: UnsplashPhoto) => void;
     onClose: () => void;
+    pendingSelection: string[];                     // IDs of currently pending photos
+    onPhotoToggle: (photo: UnsplashPhoto) => void;  // toggles a photo in/out of pending selection
+    onConfirm: () => void;                          // confirms selection and closes modal
+    onDeselectAll: () => void;
 }
 
 // values are the ones the Unsplash API accepts
@@ -70,6 +73,12 @@ export function PhotoSearchView(props: PhotoSearchViewProps){
                     </select>
                 </div>
 
+                <div className="photo-selection-row">
+                    <span className="photo-selection-count">{props.pendingSelection.length} / 8 selected</span>
+                    <button className="small-button" disabled={props.pendingSelection.length === 0}
+                            onClick={props.onDeselectAll}>Deselect all</button>
+                </div>
+
                 {renderResults()}
             </div>
         </div>
@@ -93,17 +102,29 @@ export function PhotoSearchView(props: PhotoSearchViewProps){
         if (!props.photos) return <div className="empty-text">Type a keyword to search</div>;
         if (props.photos.length === 0) return <div className="empty-text">No photos found</div>;
 
-        return <div className="photo-grid">{props.photos.map(photoCB)}</div>;
+        return (
+            <>
+                <div className="photo-grid">{props.photos.map(photoCB)}</div>
+                <div className="photo-search-footer">
+                    <button className="small-button"
+                            disabled={props.pendingSelection.length === 0}
+                            onClick={props.onConfirm}>
+                        Confirm
+                    </button>
+                </div>
+            </>
+        );
     }
 
     function photoCB(photo: UnsplashPhoto){
-        function clickPhotoACB(){ props.onPhotoSelect(photo); }
+        function clickPhotoACB(){ props.onPhotoToggle(photo); }
 
         // photographer credit, required by Unsplash guidelines
         const creditLink = photo.user.links.html + "?utm_source=sketchspace&utm_medium=referral";
+        const isSelected = props.pendingSelection.includes(photo.id);
 
         return (
-            <div key={photo.id} className="photo-item">
+            <div key={photo.id} className={"photo-item" + (isSelected ? " photo-item-selected" : "")}>
                 <img src={photo.urls.small} alt={photo.alt_description ?? undefined} onClick={clickPhotoACB}/>
                 <a href={creditLink} target="_blank" rel="noreferrer">{photo.user.name}</a>
             </div>

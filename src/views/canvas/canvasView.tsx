@@ -1,10 +1,11 @@
 import "/style.css"
 import { useRef, useEffect } from "react";
+import { UserPlus } from "lucide-react";
 import type { ReactNode, RefObject, ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import type Konva from "konva";
 import type { PhotoCredit, SaveStatus, Tool } from "/src/model/types.ts";
 import type { LiveStatus } from "/src/model/openCanvasModel.ts";
-import { downloadStageImage } from "/src/utils/exportImage.ts";
+import { downloadStageImage, captureStageThumb } from "/src/utils/exportImage.ts";
 import { LogoView } from "/src/views/logoView.tsx";
 
 // typing in these must never delete what is selected on the canvas
@@ -12,7 +13,8 @@ const TEXT_FIELD_TAGS = ["INPUT", "TEXTAREA", "SELECT"];
 
 
 interface CanvasViewProps {
-    currentTool: Tool;
+    currentTool: Tool | null;
+    toolPanelOpen: boolean;
     liveStatus: LiveStatus;
     peerCount: number;
     liveLabel: string;
@@ -26,22 +28,29 @@ interface CanvasViewProps {
     nameError: string;
     saveStatus: SaveStatus | "";            // "" when there is nothing on the canvas
     canDelete: boolean;
+    onDeselect: () => void;
     eraserOn: boolean;
-    children: ReactNode;                    // the left tool panel
+    eyedropperOn: boolean;
+    canUndo: boolean;
+    canRedo: boolean;
+    children: ReactNode;                    // the tool panel content
     renderBoard: (stageRef: RefObject<Konva.Stage | null>) => ReactNode;
+    renderToolbar: () => ReactNode;
     onHomeClick: () => void;
+    onGalleryClick: () => void;
     onProfileClick: () => void;
-    onToolChange: (tool: Tool) => void;
     onRenameStart: () => void;
     onNameDraftChange: (name: string) => void;
     onRenameSave: () => void;
     onRenameCancel: () => void;
-    onEraserToggle: () => void;
     onToolPanelPress: () => void;
     onClear: () => void;
     onShare: () => void;
     onExport: (succeeded: boolean) => void;
     onDelete: () => void;
+    onUndo: () => void;
+    onRedo: () => void;
+    onCaptureThumbnail: (dataUrl: string | null) => void;
 }
 
 export function CanvasView(props: CanvasViewProps){
@@ -51,23 +60,30 @@ export function CanvasView(props: CanvasViewProps){
     // Delete / Backspace removes what is selected. The listener is removed again before the next
     // render adds a fresh one, and when the page closes, so there is never more than one.
     useEffect(listenToDeleteKeyACB, [props.canDelete, props.onDelete]);
+    useEffect(listenToUndoRedoKeysACB, [props.onUndo, props.onRedo]);
+    useEffect(listenToEscapeKeyACB, [props.onDeselect]);
 
     return (
         <div className="layout">
-            {/* canvas page's own sidebar */}
+            {/* main nav sidebar — unchanged on canvas page */}
             <div className="sidebar">
-                <LogoView onClick={props.onHomeClick}/>
-                <button className={toolClass("shape")} onClick={clickShapeToolACB}>Shape</button>
-                <button className={toolClass("stroke")} onClick={clickStrokeToolACB}>Stroke</button>
-                <button className="sidebar-item sidebar-bottom" onClick={props.onProfileClick}>Profile</button>
+                <LogoView onClick={homeClickACB}/>
+                <button className="sidebar-item" onClick={galleryClickACB}>Gallery</button>
+                <button className="sidebar-item" onClick={profileClickACB}>Profile</button>
             </div>
 
-            {/* left tool panel, the presenter decides which panel to show; using it switches the eraser off */}
-            <div className="tool-panel" onMouseDown={props.onToolPanelPress}>
-                {props.children}
-            </div>
+            <div className="canvas-wrapper" onMouseDown={deselectACB}>
+                {/* narrow icon toolbar */}
+                {props.renderToolbar()}
 
-            <div className="canvas-main">
+                {/* tool panel — floats above the canvas when a tool is active and its panel is open */}
+                {props.toolPanelOpen && (
+                    <div className="tool-panel" onMouseDown={e => { e.stopPropagation(); props.onToolPanelPress(); }}>
+                        {props.children}
+                    </div>
+                )}
+
+                <div className="canvas-main">
                 <div className="canvas-topbar">
                     <div className="collaborators" role="status" title="People in this canvas right now">
                         <span className={"live-dot live-" + props.liveStatus}></span>
@@ -77,13 +93,9 @@ export function CanvasView(props: CanvasViewProps){
 
                     <div className="canvas-title-group">
                         {renderName()}
-                        {renderSaveStatus()}
                     </div>
 
-                    <button className="small-button" aria-pressed={props.eraserOn}
-                            title="Eraser: drag over lines, photos and shapes to delete them" onClick={props.onEraserToggle}>
-                        Eraser
-                    </button>
+                    {renderSaveStatus()}
 
                     <div className="topbar-right">
                         {props.isOwner &&
@@ -92,8 +104,8 @@ export function CanvasView(props: CanvasViewProps){
                         <button className="small-button" onClick={exportACB}>Export</button>
                         <div className="coming-soon-group">
                             <button className="small-button" disabled={props.busy} onClick={props.onShare}
-                                    title="Share this canvas with others">
-                                Share
+                                    title="Invite others to this canvas">
+                                <UserPlus size={16} />
                             </button>
                             <span className="coming-soon">{props.isShared ? "Shared in Gallery" : "Private"}</span>
                         </div>
@@ -106,9 +118,20 @@ export function CanvasView(props: CanvasViewProps){
                 {/* photographer credits for every photo on the canvas, required by Unsplash guidelines */}
                 {props.credits.length > 0 &&
                     <div className="canvas-credit">Photos by {props.credits.map(creditCB)} on Unsplash</div>}
+                </div>
             </div>
         </div>
     );
+
+    // Captures a thumbnail and navigates; called by every sidebar nav button so the stage
+    // is still mounted and stageRef.current is valid when we read it.
+    function captureAndGoACB(navigate: () => void): void {
+        props.onCaptureThumbnail(captureStageThumb(stageRef.current));
+        navigate();
+    }
+    function homeClickACB(){ captureAndGoACB(props.onHomeClick); }
+    function galleryClickACB(){ captureAndGoACB(props.onGalleryClick); }
+    function profileClickACB(){ captureAndGoACB(props.onProfileClick); }
 
     function listenToDeleteKeyACB(){
         window.addEventListener("keydown", keyDownACB);
@@ -120,6 +143,34 @@ export function CanvasView(props: CanvasViewProps){
             if (!props.canDelete || isTyping(evt.target)) return;
             evt.preventDefault();       // Backspace must not do anything else in the browser
             props.onDelete();
+        }
+    }
+    function deselectACB(){ props.onDeselect(); }
+
+    function listenToEscapeKeyACB(){
+        window.addEventListener("keydown", keyDownACB);
+        return stopListeningACB;
+
+        function stopListeningACB(){ window.removeEventListener("keydown", keyDownACB); }
+        function keyDownACB(evt: KeyboardEvent){
+            if (evt.key !== "Escape" || isTyping(evt.target)) return;
+            props.onDeselect();
+        }
+    }
+    function listenToUndoRedoKeysACB(){
+        window.addEventListener("keydown", keyDownACB);
+        return stopListeningACB;
+
+        function stopListeningACB(){ window.removeEventListener("keydown", keyDownACB); }
+        function keyDownACB(evt: KeyboardEvent){
+            if (!evt.ctrlKey || isTyping(evt.target)) return;
+            if (!evt.shiftKey && evt.key === "z") {
+                evt.preventDefault();
+                props.onUndo();
+            } else if (evt.key === "y" || (evt.shiftKey && evt.key === "Z")) {
+                evt.preventDefault();
+                props.onRedo();
+            }
         }
     }
     function isTyping(target: EventTarget | null){
@@ -178,12 +229,6 @@ export function CanvasView(props: CanvasViewProps){
             return <span className="save-status">All changes saved</span>;
         return null;
     }
-
-    function toolClass(tool: Tool){
-        return props.currentTool === tool ? "sidebar-item tool-active" : "sidebar-item";
-    }
-    function clickShapeToolACB(){ props.onToolChange("shape"); }
-    function clickStrokeToolACB(){ props.onToolChange("stroke"); }
 
     function creditCB(credit: PhotoCredit, index: number){
         return (

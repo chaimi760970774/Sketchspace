@@ -1,9 +1,8 @@
 import "/style.css"
 import type { ChangeEvent, DragEvent } from "react";
-import type { SelectedPhoto, ShapeName } from "/src/model/types.ts";
+import type { ShapeName } from "/src/model/types.ts";
 
 interface ShapePanelViewProps {
-    selectedPhoto: SelectedPhoto | null;
     canCut: boolean;
     canFill: boolean;
     shapeActionHint: string;    // why Mask / Fill is disabled, "" when both work
@@ -12,7 +11,6 @@ interface ShapePanelViewProps {
     onFill: () => void;
     onFillColorChange: (color: string) => void;
     onShapeClick: (shape: ShapeName) => void;
-    onUploadPhoto: () => void;
 }
 
 export function ShapePanelView(props: ShapePanelViewProps){
@@ -37,26 +35,10 @@ export function ShapePanelView(props: ShapePanelViewProps){
             </div>
             {/* tells the user why a button above is disabled */}
             {props.shapeActionHint && <div className="action-hint">{props.shapeActionHint}</div>}
-
-            <div className="panel-box">
-                {props.selectedPhoto &&
-                    <img className="selected-photo" src={props.selectedPhoto.url}
-                         draggable="true" onDragStart={photoDragStartACB}
-                         title="Drag into the canvas"/>}
-                <button className="text-button" onClick={props.onUploadPhoto}>Find photos on Unsplash</button>
-            </div>
-            {props.selectedPhoto &&
-                <div className="photo-credit">
-                    Photo by <a href={props.selectedPhoto.photographerLink + "?utm_source=sketchspace&utm_medium=referral"}
-                                target="_blank" rel="noreferrer">{props.selectedPhoto.photographer}</a> on Unsplash
-                </div>}
         </>
     );
 
     function fillColorChangeACB(evt: ChangeEvent<HTMLInputElement>){ props.onFillColorChange(evt.target.value); }
-
-    // tell the canvas what is being dropped
-    function photoDragStartACB(evt: DragEvent<HTMLImageElement>){ evt.dataTransfer.setData("text/plain", "photo"); }
 
     // click to add the shape to the middle of the canvas, or drag it to a chosen spot
     function shapeCB(shape: ShapeName){
@@ -68,7 +50,19 @@ export function ShapePanelView(props: ShapePanelViewProps){
                        aria-label={"Add " + shape} title={"Click or drag to add a " + shape}
                        draggable="true" onDragStart={shapeDragStartACB}
                        onClick={clickShapeACB}>
-            <span className={"shape-icon shape-icon-" + shape}></span>
+            {shapeIconSVG(shape)}
         </button>;
+    }
+
+    function shapeIconSVG(shape: ShapeName){
+        const common = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeDasharray: "4 3", strokeLinecap: "round" as const };
+        return (
+            <svg className="shape-icon" viewBox="0 0 52 52" aria-hidden="true">
+                {shape === "circle"   && <circle cx="26" cy="26" r="22" {...common}/>}
+                {shape === "square"   && <rect x="4" y="4" width="44" height="44" {...common}/>}
+                {shape === "triangle" && <polygon points="26,3 49,49 3,49" strokeLinejoin="round" {...common}/>}
+                {shape === "star"     && <polygon points="26,3 31.1,19.1 48.1,19.1 34.3,29.2 39.3,44.9 26,35.2 12.7,44.9 17.7,29.2 3.9,19.1 20.9,19.1" strokeLinejoin="round" {...common}/>}
+            </svg>
+        );
     }
 }

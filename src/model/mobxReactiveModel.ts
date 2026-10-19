@@ -5,6 +5,7 @@ import { galleryModel } from "./galleryModel.ts";
 import { canvasModel } from "./canvasModel.ts";
 import { openCanvasModel } from "./openCanvasModel.ts";
 import { toastModel } from "./toastModel.ts";
+import { historyModel } from "./historyModel.ts";
 
 import type { Model } from "./types.ts";
 
@@ -25,6 +26,7 @@ const model = {
     ...galleryModel,
     ...canvasModel,
     ...openCanvasModel,
+    ...historyModel,
     ...toastModel,
 };
 

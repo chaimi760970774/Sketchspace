@@ -1,6 +1,7 @@
 import "/style.css"
 import type { ChangeEvent } from "react";
 import type { Brush } from "/src/model/types.ts";
+import { ColorWheelPicker } from "./colorWheelPicker.tsx";
 
 interface StrokePanelViewProps {
     strokeType: Brush | string;
@@ -39,13 +40,11 @@ export function StrokePanelView(props: StrokePanelViewProps){
             </div>
 
             <div className="panel-label">Stroke Color</div>
-            {/* native color picker for now, can be replaced with a color wheel later */}
-            <input className="color-picker" type="color" value={props.strokeColor} onChange={strokeColorChangeACB}/>
+            <ColorWheelPicker color={props.strokeColor} onChange={props.onStrokeColorChange}/>
         </>
     );
 
     function strokeWidthChangeACB(evt: ChangeEvent<HTMLInputElement>){ props.onStrokeWidthChange(evt.target.value); }
-    function strokeColorChangeACB(evt: ChangeEvent<HTMLInputElement>){ props.onStrokeColorChange(evt.target.value); }
     function opacityChangeACB(evt: ChangeEvent<HTMLInputElement>){ props.onStrokeOpacityChange(Number(evt.target.value) / 100); }
 
     function strokeTypeCB(type: Brush){

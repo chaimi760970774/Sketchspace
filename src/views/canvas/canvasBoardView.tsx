@@ -1,6 +1,6 @@
 import "/style.css"
 import { useRef, useEffect, useState } from "react";
-import type { DragEvent as ReactDragEvent, RefObject } from "react";
+import type { DragEvent as ReactDragEvent, MouseEvent as ReactMouseEvent, RefObject } from "react";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type { CanvasElement, DraftStroke, ElementChanges, Point, Stroke, Tool } from "/src/model/types.ts";
@@ -20,8 +20,9 @@ const ERASE_STEP = 5;
 
 interface CanvasBoardViewProps {
     stageRef: RefObject<Konva.Stage | null>;
-    currentTool: Tool;
+    currentTool: Tool | null;
     eraserOn: boolean;
+    eyedropperOn: boolean;
     elements: CanvasElement[];
     strokes: Stroke[];
     selectedId: string | null;              // a selected element or stroke
@@ -36,6 +37,7 @@ interface CanvasBoardViewProps {
     onStrokeEnd: (path: Point[]) => void;
     onErase: (point: Point) => void;
     onEraseEnd: () => void;
+    onColorPick: (color: string) => void;
 }
 
 export function CanvasBoardView(props: CanvasBoardViewProps){
@@ -43,15 +45,34 @@ export function CanvasBoardView(props: CanvasBoardViewProps){
     // stageRef comes from CanvasView, which uses it to export the picture
     const stageRef = props.stageRef;
     const transformerRef = useRef<Konva.Transformer>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [stageSize, setStageSize] = useState({ width: CANVAS_WIDTH, height: CANVAS_HEIGHT });
+
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const observer = new ResizeObserver(() => {
+            const style = getComputedStyle(el);
+            const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+            const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+            setStageSize({
+                width: Math.max(el.clientWidth - padX, 1),
+                height: Math.max(el.clientHeight - padY, 1),
+            });
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
 
     // Stroke tool: the points of the stroke being drawn right now, null when not drawing.
     // Kept in the view because it changes on every mouse move; the finished stroke goes to the model.
     const [draftPoints, setDraftPoints] = useState<Point[] | null>(null);
     // the eraser is switched on in the topbar and works on top of whichever tool the left panel shows
     const isEraserTool = props.eraserOn;
-    const isStrokeTool = props.currentTool === "stroke" && !isEraserTool;
-    // with the stroke tool or the eraser, photos, shapes and lines ignore the mouse
-    const isPassive = isStrokeTool || isEraserTool;
+    const isEyedropperTool = props.eyedropperOn;
+    const isStrokeTool = props.currentTool === "stroke" && !isEraserTool && !isEyedropperTool;
+    // with the stroke tool, eraser or eyedropper, photos, shapes and lines ignore the mouse
+    const isPassive = isStrokeTool || isEraserTool || isEyedropperTool;
 
     // Eraser tool: whether the button is down, and where the last erase check was, so a fast move does not skip over things
     const erasing = useRef(false);
@@ -60,14 +81,33 @@ export function CanvasBoardView(props: CanvasBoardViewProps){
     // attach the resize handles to the selected element (only with the shape tool)
     useEffect(attachTransformerACB, [props.selectedId, props.elements, isPassive]);
 
-    const stageClass = isStrokeTool ? "konva-stage drawing" : isEraserTool ? "konva-stage erasing" : "konva-stage";
+    const stageClass = isStrokeTool ? "konva-stage drawing"
+                     : isEraserTool ? "konva-stage erasing"
+                     : isEyedropperTool ? "konva-stage eyedropping"
+                     : "konva-stage";
+
+    // stop the mousedown from reaching the canvas-wrapper deselect handler; the board handles its own deselection
+    function stopPropagationACB(evt: ReactMouseEvent<HTMLDivElement>){ evt.stopPropagation(); }
+
+    // needed so the browser allows dropping
+    function dragOverACB(evt: ReactDragEvent<HTMLDivElement>){ evt.preventDefault(); }
+
+    function dropACB(evt: ReactDragEvent<HTMLDivElement>){
+        evt.preventDefault();
+        const stage = stageRef.current;
+        if (!stage) return;
+        stage.setPointersPositions(evt);                      // convert mouse position to canvas coordinates
+        const position = stage.getPointerPosition();
+        const type = evt.dataTransfer.getData("text/plain");  // set by the panel when dragging starts
+        if (position) props.onDropItem(type, position);
+    }
 
     return (
-        <div className="canvas-area" onDragOver={dragOverACB} onDrop={dropACB}>
+        <div ref={containerRef} className="canvas-area" onDragOver={dragOverACB} onDrop={dropACB} onMouseDown={stopPropagationACB}>
             <Stage ref={stageRef}
                    className={stageClass}
-                   width={CANVAS_WIDTH}
-                   height={CANVAS_HEIGHT}
+                   width={stageSize.width}
+                   height={stageSize.height}
                    onMouseDown={pointerDownACB}
                    onTouchStart={pointerDownACB}
                    onMouseMove={pointerMoveACB}
@@ -102,19 +142,6 @@ export function CanvasBoardView(props: CanvasBoardViewProps){
         transformer.nodes(node ? [node] : []);
     }
 
-    // needed so the browser allows dropping
-    function dragOverACB(evt: ReactDragEvent<HTMLDivElement>){ evt.preventDefault(); }
-
-    function dropACB(evt: ReactDragEvent<HTMLDivElement>){
-        evt.preventDefault();
-        const stage = stageRef.current;
-        if (!stage) return;
-        stage.setPointersPositions(evt);                      // convert mouse position to canvas coordinates
-        const position = stage.getPointerPosition();
-        const type = evt.dataTransfer.getData("text/plain");  // set by the panel when dragging starts
-        if (position) props.onDropItem(type, position);
-    }
-
     // where the pointer is on the canvas, null if Konva does not know (e.g. before the first move)
     function getPointer(): Point | null {
         const position = stageRef.current?.getPointerPosition();
@@ -123,6 +150,11 @@ export function CanvasBoardView(props: CanvasBoardViewProps){
 
     // Shape tool: clicking on empty canvas clears the selection. Stroke tool: start a stroke. Eraser: start erasing.
     function pointerDownACB(evt: KonvaEventObject<MouseEvent | TouchEvent>){
+        if (isEyedropperTool) {
+            const point = getPointer();
+            if (point) sampleColor(point);
+            return;
+        }
         if (isEraserTool) {
             const point = getPointer();
             if (!point) return;
@@ -137,6 +169,33 @@ export function CanvasBoardView(props: CanvasBoardViewProps){
         }
         const start = getPointer();
         if (start) setDraftPoints([start]);
+    }
+
+    // Eyedropper: reads the pixel colour at the given canvas coordinate and reports it.
+    // Uses pixelRatio 1 so canvas pixel coordinates match Konva stage coordinates exactly.
+    function sampleColor(point: Point): void {
+        const stage = stageRef.current;
+        if (!stage) return;
+        try {
+            const stageCanvas = stage.toCanvas({ pixelRatio: 1 });
+            const offscreen = document.createElement("canvas");
+            offscreen.width = stageCanvas.width;
+            offscreen.height = stageCanvas.height;
+            const ctx = offscreen.getContext("2d");
+            if (!ctx) return;
+            // the stage is transparent; paint a white background first so transparent areas sample as white
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+            ctx.drawImage(stageCanvas, 0, 0);
+            const pixel = ctx.getImageData(Math.round(point.x), Math.round(point.y), 1, 1).data;
+            const hex = "#"
+                + pixel[0].toString(16).padStart(2, "0")
+                + pixel[1].toString(16).padStart(2, "0")
+                + pixel[2].toString(16).padStart(2, "0");
+            props.onColorPick(hex);
+        } catch {
+            // CORS-tainted canvas or other issue; ignore silently
+        }
     }
 
     // Erasing: every point on the way from the last position is checked, so a fast move deletes what it crosses

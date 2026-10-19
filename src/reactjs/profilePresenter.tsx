@@ -15,6 +15,7 @@ const Profile = observer(// observer needed for the presenter to update (its vie
                             error={props.model.getProfileError()}
                             hasUnsavedDraft={props.model.hasUnsavedDraft()}
                             savingPhoto={props.model.savingPhoto}
+                            theme={props.model.themePreference}
 
                             onModify={handlerModifyACB}
                             onDraftChange={handlerDraftChangeACB}
@@ -23,7 +24,8 @@ const Profile = observer(// observer needed for the presenter to update (its vie
                             onPhotoDelete={handlerPhotoDeleteACB}
                             onDeleteAccount={handlerDeleteAccountACB}
                             onLogin={handlerLoginACB}
-                            onLogout={handlerLogoutACB}/>;
+                            onLogout={handlerLogoutACB}
+                            onThemeChange={handlerThemeChangeACB}/>;
 
         function handlerModifyACB(field: ProfileField){ props.model.startEdit(field); }
         function handlerDraftChangeACB(text: string){ props.model.setProfileDraft(text); }
@@ -38,6 +40,7 @@ const Profile = observer(// observer needed for the presenter to update (its vie
 
         function handlerLoginACB(){ navigate("/login"); }
         function handlerLogoutACB(){ props.model.logoutUser().then(() => navigate("/login")); }
+        function handlerThemeChangeACB(theme: 'light' | 'dark'): void { props.model.setTheme(theme); }
     }
 );
 

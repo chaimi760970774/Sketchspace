@@ -1,5 +1,6 @@
 
 import { reactiveModel } from "./model/mobxReactiveModel.ts";
+import { autorun } from "mobx";
 import { createElement, Fragment } from "react";
 import { ReactRoot, makeRouter } from "./reactjs/ReactRoot.tsx";
 import { createRoot } from "react-dom/client";
@@ -10,6 +11,11 @@ import { createRoot } from "react-dom/client";
 
 // a login from an earlier visit is picked up from the cookie
 reactiveModel.restoreSession();
+
+// Apply data-theme attribute on <html> whenever themePreference changes
+autorun(function applyThemeCB() {
+    document.documentElement.dataset.theme = reactiveModel.themePreference;
+});
 
 // created once here, outside any component
 const router = makeRouter(reactiveModel);

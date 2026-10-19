@@ -11,6 +11,7 @@ interface ProfileViewProps {
     error: string;
     hasUnsavedDraft: boolean;
     savingPhoto: boolean;               // true while the photo is uploaded or removed
+    theme: 'light' | 'dark';
     onModify: (field: ProfileField) => void;
     onDraftChange: (text: string) => void;
     onSave: () => void;
@@ -19,6 +20,7 @@ interface ProfileViewProps {
     onDeleteAccount: () => void;
     onLogin: () => void;
     onLogout: () => void;
+    onThemeChange: (theme: 'light' | 'dark') => void;
 }
 
 interface FieldRow {
@@ -52,6 +54,24 @@ export function ProfileView(props: ProfileViewProps){
             </div>
 
             {fields.map(fieldRowCB)}
+
+            <div className="profile-row">
+                <div className="profile-field">
+                    <div>Appearance</div>
+                </div>
+                <div className="theme-toggle">
+                    <button
+                        className={"pill-button" + (props.theme === 'light' ? "" : " pill-button-outline")}
+                        onClick={() => props.onThemeChange('light')}>
+                        Light
+                    </button>
+                    <button
+                        className={"pill-button" + (props.theme === 'dark' ? "" : " pill-button-outline")}
+                        onClick={() => props.onThemeChange('dark')}>
+                        Dark
+                    </button>
+                </div>
+            </div>
 
             <div className="profile-actions">
                 {props.isLoggedIn

@@ -50,10 +50,51 @@ export function GalleryView(props: GalleryViewProps){
     return (
         <div>
             <div className="hero">
-                <h1 className="hero-title">Making Collage Together!</h1>
-                <button className="outline-button" disabled={props.creating} onClick={props.onNewCanvas}>
-                    {props.creating ? "Creating..." : "Start doodling"}
-                </button>
+                {/* Faded background text */}
+                <img className="hero-bg-text" src="/hero-bg-text.png" alt="" aria-hidden="true" />
+                {/* Diagonal gradient overlay */}
+                <div className="hero-gradient" aria-hidden="true" />
+
+                {/* Left content */}
+                <div className="hero-content">
+                    <div className="hero-badge-wrap" aria-hidden="true">
+                        <div className="hero-badge">
+                            <span className="hero-badge-text">CUT · PASTE · CREATE</span>
+                        </div>
+                    </div>
+                    <h1 className="hero-heading">
+                        Let&#8217;s make&nbsp;<span className="hero-collage-word">collage</span>
+                        <br />
+                        together!
+                    </h1>
+                    <p className="hero-description">
+                        A playful space for creative ideas, tiny scraps, and everything in between.
+                    </p>
+                    <button className="hero-btn" disabled={props.creating} onClick={props.onNewCanvas}>
+                        <span className="hero-btn-label">
+                            {props.creating ? "Creating..." : "Start creating"}
+                        </span>
+                        {!props.creating && <span className="hero-btn-arrow">→</span>}
+                    </button>
+                </div>
+
+                {/* Decorative collage elements (all aria-hidden) */}
+                <div className="hero-deco hero-paper-salmon" aria-hidden="true" />
+                <div className="hero-deco hero-paper-cream" aria-hidden="true" />
+                <img className="hero-squiggle" src="/hero-squiggle.svg" alt="" aria-hidden="true" />
+                <div className="hero-deco hero-polaroid" aria-hidden="true">
+                    <div className="hero-polaroid-card">
+                        <div className="hero-polaroid-art">
+                            <div className="hero-art-blob hero-art-blob-yellow" />
+                            <div className="hero-art-blob hero-art-blob-orange" />
+                            <div className="hero-art-blob hero-art-blob-cream" />
+                        </div>
+                        <span className="hero-polaroid-star">✦</span>
+                        <div className="hero-polaroid-circle" />
+                    </div>
+                </div>
+                <div className="hero-deco hero-tape hero-tape-1" aria-hidden="true" />
+                <div className="hero-deco hero-tape hero-tape-2" aria-hidden="true" />
             </div>
 
             <div className="page-content">

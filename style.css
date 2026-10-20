@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Caveat:wght@700&display=swap');
 
 * { box-sizing: border-box; }
 body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; font-size: 15px; color: #1a1a1a; background: #f5f5f5; }
@@ -128,31 +128,235 @@ button { font: inherit; cursor: pointer; }
 
 
 /* ========== Gallery / My Work ========== */
+
+/* Hero banner */
 .hero {
-    height: 360px;
-    background: linear-gradient(160deg, #f9b78a 0%, #f4a261 55%, #e07a35 100%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 30px;
-    color: white;
+    position: relative;
+    height: 434px;
+    background: #f1bd70;
+    overflow: hidden;
 }
-.hero-title {
-    font-size: 52px;
-    margin: 0;
-    font-weight: 700;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+.hero-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(146deg, rgba(255,255,255,0.22) 8.5%, rgba(255,255,255,0) 50%, rgba(220,98,61,0) 50%, rgba(220,98,61,0.13) 91.5%);
+    pointer-events: none;
+}
+.hero-bg-text {
+    position: absolute;
+    top: 0; left: 0;
+    width: 150px; height: 150px;
+    opacity: 0.34;
+    pointer-events: none;
 }
 
-/* the CTA button sits on orange, so invert it: white fill, orange text */
-.hero .outline-button {
-    background: white;
-    color: #c9601a;
-    font-weight: 700;
+/* Left content */
+.hero-content {
+    position: absolute;
+    top: 54px; left: 106px;
+    width: 690px;
+    display: flex;
+    flex-direction: column;
 }
-.hero .outline-button:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.88);
+.hero-badge-wrap {
+    display: inline-flex;
+    transform: rotate(-1.2deg);
+    transform-origin: left center;
+    width: fit-content;
+}
+.hero-badge {
+    background: #2f6d62;
+    padding: 7px 11px 6px;
+    box-shadow: 3px 4px 0px rgba(44,50,42,0.18);
+}
+.hero-badge-text {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 800;
+    font-size: 11px;
+    color: #fff8ec;
+    letter-spacing: 2.2px;
+    line-height: 16.5px;
+}
+.hero-heading {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 800;
+    font-size: 70px;
+    line-height: 66.5px;
+    letter-spacing: -4.55px;
+    color: #28241f;
+    margin: 17px 0 0;
+    max-width: 680px;
+    font-variation-settings: "opsz" 96, "wdth" 100;
+}
+.hero-collage-word {
+    font-family: 'Caveat', cursive;
+    font-weight: 700;
+    font-size: 79.8px;
+    line-height: 75.81px;
+    letter-spacing: -2.394px;
+    color: #fff9ed;
+    display: inline-block;
+    transform: rotate(-2deg);
+    vertical-align: -8px;
+    position: relative;
+    font-variation-settings: normal;
+}
+.hero-collage-word::after {
+    content: '';
+    position: absolute;
+    bottom: 6px; left: 3px;
+    width: 163px;
+    border-bottom: 2.4px solid #2f6d62;
+    border-radius: 16px;
+    transform: rotate(1deg);
+}
+.hero-description {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 24px;
+    color: #28241f;
+    width: 515px;
+    margin: 18px 0 21px;
+    font-variation-settings: "opsz" 14, "wdth" 100;
+}
+.hero-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 18px;
+    background: #28241f;
+    border: 1.6px solid #28241f;
+    border-radius: 4px;
+    padding: 13px 17px;
+    box-shadow: 5px 5px 0px #fff5df;
+    cursor: pointer;
+    width: fit-content;
+    transition: opacity 0.15s ease;
+}
+.hero-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.hero-btn-label {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 21px;
+    color: #fffaf0;
+    font-variation-settings: "opsz" 14, "wdth" 100;
+}
+.hero-btn-arrow {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 16px;
+    color: #fffaf0;
+}
+
+/* Decorative elements */
+.hero-deco { position: absolute; pointer-events: none; }
+
+.hero-paper-salmon {
+    left: 915px; top: -99px;
+    width: 356px; height: 277px;
+    display: flex; align-items: center; justify-content: center;
+}
+.hero-paper-salmon::before {
+    content: '';
+    width: 320px; height: 220px;
+    background: #e8785c;
+    transform: rotate(11deg);
+    box-shadow: 0 5px 2px rgba(84,60,35,0.09);
+}
+.hero-paper-cream {
+    left: 508px; top: 306px;
+    width: 271px; height: 256px;
+    display: flex; align-items: center; justify-content: center;
+}
+.hero-paper-cream::before {
+    content: '';
+    width: 230px; height: 210px;
+    background: #e8e1cc;
+    transform: rotate(-13deg);
+    box-shadow: 0 5px 2px rgba(84,60,35,0.09);
+}
+.hero-squiggle {
+    position: absolute;
+    left: 599px; top: 345px;
+    width: 150px; height: 67px;
+    pointer-events: none;
+}
+.hero-polaroid {
+    left: 1072px; top: 58px;
+    width: 221px; height: 254px;
+    display: flex; align-items: center; justify-content: center;
+}
+.hero-polaroid-card {
+    width: 205px; height: 240px;
+    background: #faf1dc;
+    border: 0.8px solid rgba(64,51,36,0.18);
+    filter: drop-shadow(12px 14px 0px rgba(62,74,59,0.18));
+    transform: rotate(4deg);
+    position: relative;
+    flex-shrink: 0;
+}
+.hero-polaroid-art {
+    position: absolute;
+    left: 24px; top: 35px;
+    width: 155px; height: 131px;
+    background: #3a7160;
+    overflow: hidden;
+}
+.hero-art-blob {
+    position: absolute;
+    width: 65px;
+    border-radius: 88px 0 88px 0;
+}
+.hero-art-blob-yellow {
+    height: 120px;
+    background: #e4bd65;
+    left: -16px; top: 47px;
+    transform: rotate(-17deg);
+}
+.hero-art-blob-orange {
+    height: 145px;
+    background: #d87555;
+    left: 70px; top: 23px;
+    transform: rotate(8deg);
+    border-radius: 97px 0 97px 0;
+}
+.hero-art-blob-cream {
+    height: 105px;
+    background: #f0dd9a;
+    left: 91px; top: 64px;
+    transform: rotate(31deg);
+    border-radius: 83px 0 83px 0;
+}
+.hero-polaroid-star {
+    position: absolute;
+    left: 161px; top: 178px;
+    font-size: 35px;
+    line-height: 52.5px;
+    color: #d45543;
+    font-family: 'Bricolage Grotesque', sans-serif;
+}
+.hero-polaroid-circle {
+    position: absolute;
+    left: 114px; top: 15px;
+    width: 80px; height: 80px;
+    background: #dc684e;
+    border-radius: 40px;
+}
+.hero-tape {
+    width: 68px; height: 20px;
+    background: #eee2b5;
+    opacity: 0.72;
+    box-shadow: inset 0 0 10px rgba(255,255,255,0.4);
+}
+.hero-tape-1 {
+    left: 1017px; top: 40px;
+    transform: rotate(-27deg);
+}
+.hero-tape-2 {
+    left: 1225px; top: 372px;
+    transform: rotate(15deg);
 }
 /* Primary button — main call to action on a page */
 .outline-button {

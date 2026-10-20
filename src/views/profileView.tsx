@@ -2,6 +2,7 @@ import "/style.css"
 import type { ChangeEvent } from "react";
 import type { ProfileField, User } from "/src/model/types.ts";
 import { DefaultAvatar } from "/src/views/defaultAvatarView.tsx";
+import { Camera, Sun, Moon } from "lucide-react";
 
 interface ProfileViewProps {
     user: User;
@@ -23,63 +24,106 @@ interface ProfileViewProps {
     onThemeChange: (theme: 'light' | 'dark') => void;
 }
 
-interface FieldRow {
-    key: ProfileField;
-    label: string;
-    editable: boolean;
-}
-
 export function ProfileView(props: ProfileViewProps){
-    const fields: FieldRow[] = [
-        { key: "name", label: "Name", editable: props.isLoggedIn },
-        { key: "email", label: "Email", editable: false },      // the server keeps the email
-    ];
+    const isEditingName = props.editingField === "name";
 
     return (
         <div className="profile-card">
+
+            {/* Section A — Header (peach background) */}
             <div className="profile-header">
-                {props.user.photoURL
-                    ? <img className="profile-avatar" src={props.user.photoURL} alt="Profile photo" referrerPolicy="no-referrer"/>
-                    : <DefaultAvatar/>}
-
-                <div className="profile-name">{props.user.name}</div>
-
-                {props.isLoggedIn && <label className="upload-label">
-                    Upload photo
-                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={photoChangeACB}/>
-                </label>}
-
-                {props.isLoggedIn && props.user.hasCustomPhoto
-                    && <button className="pill-button" onClick={clickDeletePhotoACB}>Remove photo</button>}
-            </div>
-
-            {fields.map(fieldRowCB)}
-
-            <div className="profile-row">
-                <div className="profile-field">
-                    <div>Appearance</div>
+                <div className="profile-avatar-box">
+                    {props.user.photoURL
+                        ? <img className="profile-avatar" src={props.user.photoURL} alt="Profile photo" referrerPolicy="no-referrer"/>
+                        : <DefaultAvatar/>}
+                    {props.savingPhoto && <div className="profile-avatar-spinner spinner spinner-small"/>}
                 </div>
-                <div className="theme-toggle">
-                    <button
-                        className={"pill-button" + (props.theme === 'light' ? "" : " pill-button-outline")}
-                        onClick={() => props.onThemeChange('light')}>
-                        Light
-                    </button>
-                    <button
-                        className={"pill-button" + (props.theme === 'dark' ? "" : " pill-button-outline")}
-                        onClick={() => props.onThemeChange('dark')}>
-                        Dark
-                    </button>
+
+                <div className="profile-header-info">
+                    <div className="profile-header-eyebrow">Your Account</div>
+                    <h1 className="profile-header-name">{props.user.name}</h1>
+                    <div className="profile-header-subtitle">Manage your personal details and preferences.</div>
+                </div>
+
+                {props.isLoggedIn && (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <label className={"upload-photo-btn" + (props.savingPhoto ? " disabled" : "")}>
+                            <Camera size={17}/>
+                            Upload photo
+                            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={photoChangeACB} disabled={props.savingPhoto}/>
+                        </label>
+                        {props.user.hasCustomPhoto && (
+                            <button className="remove-photo-btn" onClick={clickDeletePhotoACB} disabled={props.savingPhoto}>
+                                Remove photo
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Section B — Content rows */}
+            <div className="profile-content">
+
+                {/* Row 1 — Full Name */}
+                <div className="profile-row">
+                    <div className="profile-field">
+                        <div className="profile-field-label">Full Name</div>
+                        {isEditingName
+                            ? <input className="profile-input" aria-label="Full name" aria-invalid={Boolean(props.error)}
+                                     value={props.draft} onChange={draftChangeACB}/>
+                            : <div className="profile-value">{props.user.name}</div>}
+                        {isEditingName && props.error && <div className="field-error">{props.error}</div>}
+                    </div>
+                    {isEditingName
+                        ? <button className="pill-button" disabled={Boolean(props.error)} onClick={props.onSave}>Save</button>
+                        : props.isLoggedIn && <button className="pill-button" onClick={clickModifyNameACB}>Edit name</button>}
+                </div>
+
+                {/* Row 2 — Email Address (read-only) */}
+                <div className="profile-row">
+                    <div className="profile-field">
+                        <div className="profile-field-label">Email Address</div>
+                        <div className="profile-value">{props.user.email}</div>
+                    </div>
+                </div>
+
+                {/* Row 3 — Appearance */}
+                <div className="profile-row">
+                    <div className="profile-field">
+                        <div className="profile-field-label">Appearance</div>
+                        <div className="profile-field-sublabel">Choose how your account looks</div>
+                    </div>
+                    <div className="appearance-toggle">
+                        <button
+                            className={"appearance-toggle-btn" + (props.theme === 'light' ? " active" : "")}
+                            onClick={() => props.onThemeChange('light')}>
+                            <Sun size={17}/>
+                            Light
+                        </button>
+                        <button
+                            className={"appearance-toggle-btn" + (props.theme === 'dark' ? " active" : "")}
+                            onClick={() => props.onThemeChange('dark')}>
+                            <Moon size={17}/>
+                            Dark
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            {/* Section C — Footer */}
+            <div className="profile-footer">
+                <div className="profile-footer-text">{props.isLoggedIn ? "Need a break? You can log back in at any time." : "Sign up or log in to save your creations."}</div>
+                <div className="profile-footer-actions">
+                    {props.isLoggedIn
+                        ? <>
+                            <button className="pill-button-white" onClick={props.onLogout}>Log out</button>
+                            <button className="pill-button danger-button" onClick={clickDeleteAccountACB}>Delete account</button>
+                          </>
+                        : <button className="pill-button" onClick={props.onLogin}>Log in or sign up</button>}
                 </div>
             </div>
 
-            <div className="profile-actions">
-                {props.isLoggedIn
-                    ? <button className="pill-button" onClick={props.onLogout}>Log out</button>
-                    : <button className="pill-button" onClick={props.onLogin}>Log in or sign up</button>}
-
-                {props.isLoggedIn && <button className="pill-button danger-button" onClick={clickDeleteAccountACB}>Delete account</button>}
-            </div>
         </div>
     );
 
@@ -97,30 +141,10 @@ export function ProfileView(props: ProfileViewProps){
         if (window.confirm("Delete your account? Your canvases and folders are deleted too. This cannot be undone.")) props.onDeleteAccount();
     }
 
-    function fieldRowCB(field: FieldRow){
-        const isEditing = props.editingField === field.key;
-
-        // ask first, so switching to another field does not silently throw away what was typed
-        function clickModifyACB(){
-            if (props.hasUnsavedDraft && !window.confirm("You have unsaved changes. Discard them?")) return;
-            props.onModify(field.key);
-        }
-        function draftChangeACB(evt: ChangeEvent<HTMLInputElement>){ props.onDraftChange(evt.target.value); }
-
-        return (
-            <div key={field.key} className="profile-row">
-                <div className="profile-field">
-                    <div>{field.label}</div>
-                    {isEditing
-                        ? <input className="profile-input" aria-label={field.label} aria-invalid={Boolean(props.error)}
-                                 value={props.draft} onChange={draftChangeACB}/>
-                        : <div className="profile-value">{props.user[field.key]}</div>}
-                    {isEditing && props.error && <div className="field-error">{props.error}</div>}
-                </div>
-
-                {isEditing && <button className="pill-button" disabled={Boolean(props.error)} onClick={props.onSave}>Save</button>}
-                {!isEditing && field.editable && <button className="pill-button" onClick={clickModifyACB}>Modify</button>}
-            </div>
-        );
+    function clickModifyNameACB(){
+        if (props.hasUnsavedDraft && !window.confirm("You have unsaved changes. Discard them?")) return;
+        props.onModify("name");
     }
+
+    function draftChangeACB(evt: ChangeEvent<HTMLInputElement>){ props.onDraftChange(evt.target.value); }
 }

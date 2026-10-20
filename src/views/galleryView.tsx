@@ -51,7 +51,7 @@ export function GalleryView(props: GalleryViewProps){
         <div>
             <div className="hero">
                 {/* Faded background text */}
-                <img className="hero-bg-text" src="/hero-bg-text.png" alt="" aria-hidden="true" />
+                <img className="hero-bg-text"      src={`${import.meta.env.BASE_URL}hero-bg-text.png`} alt="" aria-hidden="true" />
                 {/* Diagonal gradient overlay */}
                 <div className="hero-gradient" aria-hidden="true" />
 
@@ -81,7 +81,7 @@ export function GalleryView(props: GalleryViewProps){
                 {/* Decorative collage elements (all aria-hidden) */}
                 <div className="hero-deco hero-paper-salmon" aria-hidden="true" />
                 <div className="hero-deco hero-paper-cream" aria-hidden="true" />
-                <img className="hero-squiggle" src="/hero-squiggle.svg" alt="" aria-hidden="true" />
+                <img className="hero-squiggle"      src={`${import.meta.env.BASE_URL}hero-squiggle.svg`} alt="" aria-hidden="true" />
                 <div className="hero-deco hero-polaroid" aria-hidden="true">
                     <div className="hero-polaroid-card">
                         <div className="hero-polaroid-art">

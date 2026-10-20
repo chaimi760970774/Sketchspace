@@ -12,15 +12,23 @@ const Gallery = observer(// observer needed for the presenter to update (its vie
         // load the canvases and folders every time the page is opened
         useEffect(loadMyWorkACB, []);
 
-        return <GalleryView canvases={props.model.getMyCanvases()}
-                            sharedCanvases={props.model.getGalleryCanvases()}
+        // read preview for canvas
+        const myCanvases = props.model.getMyCanvases();
+        const sharedCanvases = props.model.getGalleryCanvases();
+        const thumbnails: Record<string, string | null> = {};
+        function addThumbnailCB(canvas: Canvas): void { thumbnails[canvas._id] = props.model.getCardThumbnail(canvas._id); }
+        myCanvases.forEach(addThumbnailCB);
+        sharedCanvases.forEach(addThumbnailCB);
+
+        return <GalleryView canvases={myCanvases}
+                            sharedCanvases={sharedCanvases}
                             sharedSearchText={props.model.gallerySearchText}
                             folders={props.model.getMyFolders()}
                             searchText={props.model.myWorkSearchText}
                             loading={props.model.isLoadingCanvases()}
                             error={props.model.getCanvasesError()}
                             creating={props.model.creatingCanvas}
-                            getThumbnail={getThumbnailCB}
+                            thumbnails={thumbnails}
                             busyCanvasIds={props.model.busyCanvasIds}
                             selectedFolderId={props.model.selectedFolderId}
                             dragOverTab={props.model.dragOverTab}
@@ -54,7 +62,6 @@ const Gallery = observer(// observer needed for the presenter to update (its vie
                             onNewCanvas={handlerNewCanvasACB}
                             onCardClick={handlerCardClickACB}/>;
 
-        function getThumbnailCB(canvasId: string){ return props.model.getCardThumbnail(canvasId); }
         function loadMyWorkACB(){ props.model.loadMyWork(); }
 
         function handlerSearchChangeACB(text: string){ props.model.setMyWorkSearchText(text); }

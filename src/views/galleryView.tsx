@@ -13,7 +13,7 @@ interface GalleryViewProps {
     error: string;
     creating: boolean;
     busyCanvasIds: string[];
-    getThumbnail: (canvasId: string) => string | null;
+    thumbnails: Record<string, string | null>;      // canvas id -> preview picture, null while there is none
     selectedFolderId: string | null;
     dragOverTab: string | null;
     newFolderOpen: boolean;
@@ -288,7 +288,7 @@ export function GalleryView(props: GalleryViewProps){
 
     function cardCB(canvas: Canvas, readOnly: boolean){
         const busy = !readOnly && props.busyCanvasIds.includes(canvas._id);
-        const thumb = props.getThumbnail(canvas._id);
+        const thumb = props.thumbnails[canvas._id];
 
         function clickCardACB(){ props.onCardClick(canvas); }
         function dragStartACB(evt: DragEvent<HTMLDivElement>){

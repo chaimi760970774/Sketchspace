@@ -21,6 +21,7 @@ interface CanvasViewProps {
     credits: PhotoCredit[];
     canvasName: string;
     isShared: boolean;
+    isPublic: boolean;
     isOwner: boolean;
     busy: boolean;                          // a rename / share request is running
     renaming: boolean;
@@ -114,7 +115,7 @@ export function CanvasView(props: CanvasViewProps){
                                     title="Invite others to this canvas">
                                 <UserPlus size={16} />
                             </button>
-                            <span className="coming-soon">{props.isShared ? "Shared in Gallery" : "Private"}</span>
+                            <span className="coming-soon">{props.isPublic ? "Public for all" : props.isShared ? "Shared by id" : "Private"}</span>
                         </div>
                     </div>
                 </div>

@@ -12,7 +12,7 @@ const MAX_FOLDER_NAME = 30;
 
 interface GalleryState {
     // Data
-    // All canvases, loaded from the server by loadCanvases(); only shared ones (isShared) are shown in the Gallery
+    // All canvases, loaded from the server by loadCanvases(); only public ones (isPublic) are shown in the Gallery
     canvases: Canvas[];
     // the ids of the canvases the logged-in account owns, from the server (a guest's are found through owner tokens)
     myCanvasIds: string[];
@@ -264,10 +264,10 @@ export const galleryModel = {
         return canvases.filter(matchCB);
     },
 
-    // Gallery shows everyone's shared canvases
+    // Gallery shows everyone's public canvases (a canvas shared by id only is not listed)
     getGalleryCanvases(): Canvas[] {
-        function isSharedCB(canvas: Canvas): boolean { return canvas.isShared; }
-        return this.filterCanvases(this.canvases.filter(isSharedCB), this.gallerySearchText);
+        function isPublicCB(canvas: Canvas): boolean { return canvas.isPublic; }
+        return this.filterCanvases(this.canvases.filter(isPublicCB), this.gallerySearchText);
     },
 
     // My Work shows the current user's canvases, only the ones in the open folder unless "All" is open
@@ -326,7 +326,7 @@ export const galleryModel = {
         function doneACB(): void { model.creatingCanvas = false; }
     },
 
-    // Changing (name and/or isShared)
+    // Changing (name, isShared and/or isPublic)
     // after the update the canvas is read again, so updatedAt is the server's time
     saveCanvasChanges(canvasId: string, changes: CanvasChanges, successMessage: string): Promise<void> {
         const model = this;
@@ -346,9 +346,16 @@ export const galleryModel = {
         function doneACB(): void { model.setCanvasBusy(canvasId, false); }
     },
 
+    // sharing by id: anyone with the canvas id can join; turning it off makes the canvas private, which also takes it out of the Gallery
     setCanvasShared(canvasId: string, isShared: boolean): Promise<void> {
-        const message = isShared ? "Canvas is now shared in the Gallery" : "Canvas is now private";
+        const message = isShared ? "Anyone with the canvas id can now join" : "Canvas is now private";
         return this.saveCanvasChanges(canvasId, { isShared: isShared }, message);
+    },
+
+    // listing in the Gallery; a public canvas is shared too, so this turns sharing on as well
+    setCanvasPublic(canvasId: string, isPublic: boolean): Promise<void> {
+        const message = isPublic ? "Canvas is now public in the Gallery" : "Canvas removed from the Gallery";
+        return this.saveCanvasChanges(canvasId, { isPublic: isPublic }, message);
     },
 
     // Deleting

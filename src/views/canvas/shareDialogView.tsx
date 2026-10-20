@@ -3,16 +3,19 @@ import type { FocusEvent, MouseEvent } from "react";
 
 interface ShareDialogViewProps {
     canvasId: string;
-    isShared: boolean;
+    isShared: boolean;          // anyone with the canvas id can join
+    isPublic: boolean;          // also listed in the Gallery
     copied: boolean;            // Copy was clicked since the popup opened
     isOwner: boolean;           // only the owner can change sharing
     busy: boolean;
     onCopy: () => void;
     onToggleShared: () => void;
+    onTogglePublic: () => void;
     onClose: () => void;
 }
 
-// popup opened by the invite button, lets the owner toggle shared/private
+// popup opened by the invite button; the owner chooses who can get in: nobody (private), anyone with the
+// canvas id, and separately whether the canvas is also listed in the Gallery
 export function ShareDialogView(props: ShareDialogViewProps){
     return (
         // clicking the dark background closes the popup
@@ -24,28 +27,44 @@ export function ShareDialogView(props: ShareDialogViewProps){
                 </div>
 
                 {props.isOwner && (
-                    <div className="share-toggle-row">
-                        <div>
-                            <div className="share-toggle-label">
-                                {props.isShared ? "Shared" : "Private"}
+                    <>
+                        <div className="share-toggle-row">
+                            <div>
+                                <div className="share-toggle-label">Share with the canvas id</div>
+                                <div className="share-toggle-hint">
+                                    {props.isShared
+                                        ? "Anyone with the canvas id can join. It stays out of the Gallery unless you make it public."
+                                        : "Private: only you can access this canvas"}
+                                </div>
                             </div>
-                            <div className="share-toggle-hint">
-                                {props.isShared
-                                    ? "Anyone with the canvas id can join"
-                                    : "Only you can access this canvas"}
-                            </div>
+                            <label className="toggle-switch" title={props.isShared ? "Make private" : "Share with the canvas id"}>
+                                <input type="checkbox" aria-label="Share with the canvas id" checked={props.isShared}
+                                       disabled={props.busy} onChange={props.onToggleShared} />
+                                <span className="toggle-slider" />
+                            </label>
                         </div>
-                        <label className="toggle-switch" title={props.isShared ? "Make private" : "Share in Gallery"}>
-                            <input type="checkbox" checked={props.isShared} disabled={props.busy}
-                                   onChange={props.onToggleShared} />
-                            <span className="toggle-slider" />
-                        </label>
-                    </div>
+
+                        <div className="share-toggle-row">
+                            <div>
+                                <div className="share-toggle-label">Public for All</div>
+                                <div className="share-toggle-hint">
+                                    {props.isPublic
+                                        ? "Turning this on will make the canvas publicly available for everybody."
+                                        : "Not listed in the Gallery. Turning this on also shares it."}
+                                </div>
+                            </div>
+                            <label className="toggle-switch" title={props.isPublic ? "Remove from the Gallery" : "Show in the Gallery"}>
+                                <input type="checkbox" aria-label="Public in the Gallery" checked={props.isPublic}
+                                       disabled={props.busy} onChange={props.onTogglePublic} />
+                                <span className="toggle-slider" />
+                            </label>
+                        </div>
+                    </>
                 )}
 
                 {!props.isOwner && (
                     <p className="share-toggle-hint">
-                        {props.isShared ? "This canvas is shared." : "This canvas is private."}
+                        {props.isPublic ? "This canvas is public in the Gallery." : props.isShared ? "This canvas is shared by id." : "This canvas is private."}
                     </p>
                 )}
 

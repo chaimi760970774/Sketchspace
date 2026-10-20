@@ -15,6 +15,7 @@ export interface JoinResult {
     strokes: ServerStroke[];
     elements: ServerElement[];
     isShared: boolean;
+    isPublic: boolean;
     isOwner: boolean;
 }
 

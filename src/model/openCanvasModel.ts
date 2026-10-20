@@ -282,7 +282,7 @@ export const openCanvasModel = {
         return navigator.clipboard.writeText(canvasId).then(copiedACB, copyFailedACB);
     },
 
-    // Toggle in the popup: flip shared ↔ private (owner only)
+    // Toggle in the popup: share with the canvas id ↔ private (owner only); private canvases are not public either
     toggleCanvasShared(): Promise<void> {
         const canvas = this.currentCanvas;
         if (!canvas) return Promise.resolve();
@@ -291,6 +291,17 @@ export const openCanvasModel = {
             return Promise.resolve();
         }
         return this.setCanvasShared(canvas._id, !canvas.isShared);
+    },
+
+    // Toggle in the popup: show in the Gallery ↔ not (owner only); showing it also shares it
+    toggleCanvasPublic(): Promise<void> {
+        const canvas = this.currentCanvas;
+        if (!canvas) return Promise.resolve();
+        if (!this.isCurrentCanvasOwner()) {
+            this.showToast("Only the owner can change sharing", "error");
+            return Promise.resolve();
+        }
+        return this.setCanvasPublic(canvas._id, !canvas.isPublic);
     },
 
     // only the owner (the account, or whoever holds the token) can change sharing; the server says if the account owns it

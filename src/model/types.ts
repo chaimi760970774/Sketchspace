@@ -40,7 +40,10 @@ export type Tool = "shape" | "stroke" | "photo";
 export interface Canvas {
     _id: string;
     name: string;
+    // anyone with the canvas id can join (a private canvas is only for its owner)
     isShared: boolean;
+    // also listed in the Gallery; a public canvas is always shared
+    isPublic: boolean;
     createdAt: string;
     updatedAt: string;
     layers?: { id: string; order: number; visible: boolean }[];
@@ -54,6 +57,7 @@ export interface Canvas {
 export interface CanvasChanges {
     name?: string;
     isShared?: boolean;
+    isPublic?: boolean;
 }
 
 // ========== Strokes ==========

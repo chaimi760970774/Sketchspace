@@ -98,7 +98,7 @@ export function GalleryView(props: GalleryViewProps){
             </div>
 
             <div className="page-content">
-                <div className="toolbar-title">Shared Canvas</div>
+                <div className="toolbar-title">Public Canvas</div>
                 <div className="shared-toolbar">
                     <input className="search-input" placeholder="Search shared canvases" aria-label="Search shared canvases"
                            value={props.sharedSearchText} onChange={sharedSearchChangeACB}/>
@@ -317,7 +317,7 @@ export function GalleryView(props: GalleryViewProps){
                 <div className="card-info">
                     <div className="card-name">{canvas.name}</div>
                     <div className="card-date">Updated {formatDate(canvas.updatedAt)}</div>
-                    <div className="card-shared">{canvas.isShared ? "Shared" : "Private"}</div>
+                    <div className="card-shared">{canvas.isPublic ? "Public" : canvas.isShared ? "Shared by id" : "Private"}</div>
                 </div>
 
                 {busy && <div className="spinner spinner-small" role="status" aria-label="Saving"></div>}
